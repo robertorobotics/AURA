@@ -79,6 +79,15 @@ def _static(cls: Any, method: str) -> Any:
     return getattr(cls, f"{method}_s", None) or getattr(cls, method)
 
 
+def _st_call(shape_tool: Any, method: str, *args: Any) -> Any:
+    """Call a shape_tool method — instance in pythonocc, static in OCP."""
+    fn = getattr(shape_tool, method, None)
+    if fn is not None:
+        return fn(*args)
+    # OCP: static methods with _s suffix on the class
+    return _static(type(shape_tool), method)(*args)
+
+
 # ---------------------------------------------------------------------------
 # Internal data structures
 # ---------------------------------------------------------------------------
@@ -272,25 +281,29 @@ class CADParser:
         out: list[_RawPart],
     ) -> None:
         """Recursively walk a TDF_Label tree, collecting leaf shapes."""
-        if shape_tool.IsAssembly(label):
+        if _st_call(shape_tool, "IsAssembly", label):
             components = TDF_LabelSequence()
-            shape_tool.GetComponents(label, components)
+            _st_call(shape_tool, "GetComponents", label, components)
             for i in range(components.Length()):
                 self._walk_label(shape_tool, components.Value(i + 1), out)
             return
 
         # Resolve references
         ref_label = TDF_Label()
-        actual_label = ref_label if shape_tool.GetReferredShape(label, ref_label) else label
+        actual_label = (
+            ref_label
+            if _st_call(shape_tool, "GetReferredShape", label, ref_label)
+            else label
+        )
 
-        shape = shape_tool.GetShape(actual_label)
+        shape = _st_call(shape_tool, "GetShape", actual_label)
         if shape is None or shape.IsNull():
             return
 
         name = self._get_label_name(actual_label) or f"Part_{len(out) + 1}"
 
         # Get transform from the original (possibly reference) label
-        loc_shape = shape_tool.GetShape(label)
+        loc_shape = _st_call(shape_tool, "GetShape", label)
         trsf = loc_shape.Location().Transformation()
         try:
             pos, rot = trsf_to_pos_rot(trsf)

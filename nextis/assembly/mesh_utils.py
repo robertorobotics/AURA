@@ -25,9 +25,9 @@ try:
     from OCP.BRepBndLib import BRepBndLib as brepbndlib
     from OCP.BRepMesh import BRepMesh_IncrementalMesh
     from OCP.TopAbs import TopAbs_FACE
-    from OCP.TopoDS import TopoDS as _topods_cast
     from OCP.TopExp import TopExp_Explorer
     from OCP.TopLoc import TopLoc_Location
+    from OCP.TopoDS import TopoDS as _topods_cast
 
     HAS_OCC = True
 except ImportError:
