@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nextis-assembler"
+version = "0.1.0"
+description = "CAD-driven assembly automation platform"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Proprietary"}
+authors = [
+    {name = "Roberto De la Cruz"},
+]
+
+dependencies = [
+    "numpy",
+    "torch",
+    "fastapi",
+    "uvicorn[standard]",
+    "pyyaml",
+    "trimesh",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["nextis"]
+known-third-party = ["lerobot"]
+section-order = ["future", "standard-library", "third-party", "lerobot", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+"lerobot" = ["lerobot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]

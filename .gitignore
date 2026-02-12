@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ruff
+.ruff_cache/
+
+# Data & models (large files, never commit)
+*.hdf5
+*.h5
+*.ckpt
+*.pt
+*.pth
+*.onnx
+
+# Node (frontend)
+node_modules/
+.next/
+out/
+
+# Logs
+*.log
+
+# Calibration data (machine-specific)
+configs/calibration/*/
+
+# LeRobot submodule outputs
+lerobot/outputs/
