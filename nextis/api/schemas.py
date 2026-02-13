@@ -6,6 +6,8 @@ All use camelCase aliases for JSON serialization.
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -161,8 +163,8 @@ class PlanSuggestionResponse(BaseModel):
 
     step_id: str = Field(alias="stepId")
     field: str
-    old_value: str = Field(alias="oldValue")
-    new_value: str = Field(alias="newValue")
+    old_value: Any = Field(alias="oldValue")
+    new_value: Any = Field(alias="newValue")
     reason: str
 
 

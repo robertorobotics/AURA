@@ -6,6 +6,8 @@ STEP file uploads are parsed into assemblies via CADParser.
 
 from __future__ import annotations
 
+import contextlib
+import json
 import logging
 import shutil
 import tempfile
@@ -99,6 +101,12 @@ async def update_step(
     graph = _load_assembly(assembly_id)
     if step_id not in graph.steps:
         raise HTTPException(status_code=404, detail=f"Step '{step_id}' not found")
+
+    # Deserialize any JSON-encoded dict fields before Pydantic validation
+    for key in ("primitiveParams", "primitive_params", "successCriteria", "success_criteria"):
+        if key in updates and isinstance(updates[key], str):
+            with contextlib.suppress(json.JSONDecodeError):
+                updates[key] = json.loads(updates[key])
 
     step = graph.steps[step_id]
     updated_data = step.model_dump(by_alias=True)
@@ -237,19 +245,30 @@ async def analyze_assembly(
     )
 
 
+_VALID_PRIMITIVE_TYPES = {
+    "move_to", "pick", "place", "guarded_move", "linear_insert", "screw", "press_fit",
+}
+_VALID_CRITERIA_TYPES = {"position", "force_threshold", "force_signature", "classifier"}
+
+
 def _apply_suggestions(
     graph: AssemblyGraph,
     suggestions: list[Any],
 ) -> None:
     """Apply AI suggestions to the assembly graph in-place.
 
-    Only modifies a whitelist of safe fields: handler, primitiveType,
-    maxRetries, name. Skips unknown step_ids or unrecognized fields.
+    Modifies whitelisted fields: handler, primitiveType, primitiveParams,
+    successCriteria, maxRetries, name. Validates types and values before
+    applying. Skips unknown step_ids or unrecognized fields.
     """
     field_map = {
         "handler": "handler",
         "primitiveType": "primitive_type",
         "primitive_type": "primitive_type",
+        "primitiveParams": "primitive_params",
+        "primitive_params": "primitive_params",
+        "successCriteria": "success_criteria",
+        "success_criteria": "success_criteria",
         "maxRetries": "max_retries",
         "max_retries": "max_retries",
         "name": "name",
@@ -267,6 +286,48 @@ def _apply_suggestions(
 
         step = graph.steps[s.step_id]
         current = getattr(step, attr)
-        new_value: Any = int(s.new_value) if attr == "max_retries" else s.new_value
-        setattr(step, attr, new_value)
-        logger.info("Applied: %s.%s: %s -> %s", s.step_id, attr, current, new_value)
+        value: Any = s.new_value
+
+        # Type coercion
+        if attr == "max_retries":
+            try:
+                value = int(value)
+            except (ValueError, TypeError):
+                logger.warning("Skipping invalid max_retries value: %s", value)
+                continue
+        elif attr in ("primitive_params", "success_criteria") and isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                logger.warning("Skipping non-JSON %s value: %.100s", attr, value)
+                continue
+
+        # Validate primitive_params
+        if attr == "primitive_params":
+            if step.handler == "policy" and value is not None:
+                logger.warning("Skipping primitiveParams for policy step %s", s.step_id)
+                continue
+            if not isinstance(value, (dict, type(None))):
+                logger.warning("Skipping non-dict primitiveParams for %s", s.step_id)
+                continue
+
+        # Validate success_criteria
+        if (
+            attr == "success_criteria"
+            and isinstance(value, dict)
+            and value.get("type") not in _VALID_CRITERIA_TYPES
+        ):
+            logger.warning(
+                "Skipping unknown criteria type '%s' for %s",
+                value.get("type"),
+                s.step_id,
+            )
+            continue
+
+        # Validate primitive_type
+        if attr == "primitive_type" and value is not None and value not in _VALID_PRIMITIVE_TYPES:
+            logger.warning("Skipping unknown primitive_type '%s'", value)
+            continue
+
+        setattr(step, attr, value)
+        logger.info("Applied: %s.%s: %s -> %s", s.step_id, attr, current, value)

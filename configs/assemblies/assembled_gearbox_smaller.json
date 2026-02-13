@@ -311,8 +311,8 @@
       "dependencies": [
         "step_004"
       ],
-      "handler": "policy",
-      "primitiveType": null,
+      "handler": "primitive",
+      "primitiveType": "press_fit",
       "primitiveParams": null,
       "policyId": null,
       "successCriteria": {
@@ -361,7 +361,7 @@
         "step_006"
       ],
       "handler": "policy",
-      "primitiveType": null,
+      "primitiveType": "linear_insert",
       "primitiveParams": null,
       "policyId": null,
       "successCriteria": {
@@ -463,7 +463,7 @@
         "model": null,
         "pattern": "meshing"
       },
-      "maxRetries": 3
+      "maxRetries": 5
     },
     "step_012": {
       "id": "step_012",
@@ -509,7 +509,7 @@
         "model": null,
         "pattern": "meshing"
       },
-      "maxRetries": 3
+      "maxRetries": 5
     },
     "step_014": {
       "id": "step_014",
@@ -555,7 +555,7 @@
         "model": null,
         "pattern": "meshing"
       },
-      "maxRetries": 3
+      "maxRetries": 5
     },
     "step_016": {
       "id": "step_016",
@@ -601,7 +601,7 @@
         "model": null,
         "pattern": "meshing"
       },
-      "maxRetries": 3
+      "maxRetries": 5
     }
   },
   "stepOrder": [
