@@ -4,7 +4,7 @@ import { Suspense, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Edges, useGLTF } from "@react-three/drei";
 import type { Group, Material, MeshStandardMaterial } from "three";
-import { Mesh } from "three";
+import { Box3, Mesh, Vector3 } from "three";
 import type { Part } from "@/lib/types";
 import type { PartRenderState } from "@/lib/animation";
 import { GraspPoint } from "./GraspPoint";
@@ -23,7 +23,9 @@ function GlbMesh({ url }: { url: string }) {
   const fullUrl = url.startsWith("http") ? url : `${API_BASE}${url}`;
   const { scene } = useGLTF(fullUrl);
 
-  // Clone scene with independent materials per instance
+  // Clone scene with independent materials, then recenter at local origin.
+  // OCC tessellation may bake assembly-level transforms into GLB vertices;
+  // Part.position (applied by the parent group) handles placement exclusively.
   const cloned = useMemo(() => {
     const c = scene.clone();
     c.traverse((child) => {
@@ -32,6 +34,13 @@ function GlbMesh({ url }: { url: string }) {
         m.material = (m.material as Material).clone();
       }
     });
+
+    const box = new Box3().setFromObject(c);
+    const center = box.getCenter(new Vector3());
+    if (center.length() > 0.0001) {
+      c.position.sub(center);
+    }
+
     return c;
   }, [scene]);
 

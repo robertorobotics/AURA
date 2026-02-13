@@ -2,7 +2,7 @@ export type ConnectionState = "connecting" | "connected" | "disconnected";
 export type MessageHandler = (data: unknown) => void;
 
 const MAX_RECONNECT_DELAY = 10_000;
-const MAX_RECONNECT_ATTEMPTS = 10;
+const MAX_RECONNECT_ATTEMPTS = 3;
 
 export class AuraWebSocket {
   private url: string;

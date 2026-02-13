@@ -12,18 +12,13 @@ interface StepCardProps {
 }
 
 function StepIndicator({ index, status }: { index: number; status: StepRuntimeState["status"] }) {
+  const circle = "flex h-7 w-7 shrink-0 items-center justify-center rounded-full";
+
   if (status === "success") {
     return (
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path
-            d="M4 8L7 11L12 5"
-            stroke="currentColor"
-            strokeWidth="1"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-status-success"
-          />
+      <div className={`${circle} bg-status-success`}>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M4 8L7 11L12 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
     );
@@ -31,32 +26,41 @@ function StepIndicator({ index, status }: { index: number; status: StepRuntimeSt
 
   if (status === "failed") {
     return (
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path
-            d="M4 4L10 10M10 4L4 10"
-            stroke="currentColor"
-            strokeWidth="1"
-            strokeLinecap="round"
-            className="text-status-error"
-          />
+      <div className={`${circle} bg-status-error`}>
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+          <path d="M4 4L10 10M10 4L4 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </div>
     );
   }
 
-  const colorClass =
-    status === "running"
-      ? "text-signal animate-pulse-subtle"
-      : status === "human"
-        ? "text-status-human"
-        : status === "retrying"
-          ? "text-status-warning"
-          : "text-text-tertiary";
+  if (status === "running") {
+    return (
+      <div className={`${circle} animate-pulse-subtle bg-accent`}>
+        <span className="font-mono text-[13px] font-semibold text-white">{index}</span>
+      </div>
+    );
+  }
+
+  if (status === "human") {
+    return (
+      <div className={`${circle} bg-status-human`}>
+        <span className="font-mono text-[13px] font-semibold text-white">{index}</span>
+      </div>
+    );
+  }
+
+  if (status === "retrying") {
+    return (
+      <div className={`${circle} bg-status-warning`}>
+        <span className="font-mono text-[13px] font-semibold text-white">{index}</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-      <span className={`font-mono text-[20px] font-medium tabular-nums ${colorClass}`}>
+    <div className={`${circle} border-[1.5px] border-bg-tertiary`}>
+      <span className="font-mono text-[13px] font-medium tabular-nums text-text-tertiary">
         {index}
       </span>
     </div>
@@ -77,8 +81,8 @@ export function StepCard({ step, stepIndex, runtimeState, isSelected, onClick }:
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-3 border-b border-bg-tertiary px-4 py-2.5 text-left transition-colors hover:bg-bg-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ${
-        isSelected ? "border-l-2 border-l-signal" : "border-l-2 border-l-transparent"
+      className={`flex w-full items-center gap-3 border-b border-bg-tertiary px-4 py-3 text-left transition-colors hover:bg-bg-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ${
+        isSelected ? "border-l-2 border-l-accent" : "border-l-2 border-l-transparent"
       }`}
     >
       <StepIndicator index={stepIndex} status={runtimeState.status} />

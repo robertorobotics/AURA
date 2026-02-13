@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import useSWR from "swr";
 import { useAssembly } from "@/context/AssemblyContext";
 import { useExecution } from "@/context/ExecutionContext";
@@ -85,18 +86,22 @@ export function BottomBar() {
   ];
 
   return (
-    <footer className="flex h-8 shrink-0 items-center justify-center gap-8 border-t border-bg-tertiary px-6">
+    <footer className="flex h-10 shrink-0 items-center justify-center gap-6 border-t border-bg-tertiary px-6">
       <HardwareIndicator />
       <TeleopIndicator />
-      {items.map((item) => (
-        <div key={item.label} className="flex flex-col items-center">
-          <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-text-tertiary leading-none">
-            {item.label}
-          </span>
-          <span className="font-mono text-[16px] font-medium tabular-nums leading-tight text-text-primary">
-            {item.value}
-          </span>
-        </div>
+      {items.map((item, i) => (
+        <Fragment key={item.label}>
+          {i === 0 && <div className="h-5 w-px bg-bg-tertiary" />}
+          <div className="flex flex-col items-center">
+            <span className="text-[9px] font-medium uppercase tracking-[0.06em] text-text-tertiary leading-none">
+              {item.label}
+            </span>
+            <span className="font-mono text-[16px] font-medium tabular-nums leading-tight text-text-primary">
+              {item.value}
+            </span>
+          </div>
+          {i < items.length - 1 && <div className="h-5 w-px bg-bg-tertiary" />}
+        </Fragment>
       ))}
     </footer>
   );

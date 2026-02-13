@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import type { Assembly, AssemblySummary } from "@/lib/types";
 import { MOCK_ASSEMBLY, MOCK_SUMMARIES } from "@/lib/mock-data";
 import { api } from "@/lib/api";
@@ -21,7 +21,7 @@ interface AssemblyContextValue {
   isLoading: boolean;
   selectedStepId: string | null;
   selectStep: (stepId: string | null) => void;
-  selectAssembly: (assemblyId: string) => void;
+  selectAssembly: (assemblyId: string, data?: Assembly) => void;
   refreshAssemblies: () => void;
   deleteAssembly: (id: string) => Promise<void>;
 }
@@ -67,7 +67,10 @@ export function AssemblyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const selectAssembly = useCallback(
-    (id: string) => {
+    (id: string, data?: Assembly) => {
+      if (data) {
+        void globalMutate(`/assemblies/${id}`, data, false);
+      }
       setAssemblyId(id);
       setSelectedStepId(null);
     },

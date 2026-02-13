@@ -184,7 +184,7 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
 
     // Only start mock timer if WS is not delivering real state
     if (!wsActive) {
-      timerRef.current = setInterval(advanceStep, 5000);
+      timerRef.current = setInterval(advanceStep, 1500);
     }
   }, [assembly, clearTimer, advanceStep, wsActive, state.runNumber, state.overallSuccessRate]);
 
@@ -200,7 +200,7 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
     api.resumeExecution().catch(console.warn);
     if (!wsActive) {
       setState((prev) => ({ ...prev, phase: "running" }));
-      timerRef.current = setInterval(advanceStep, 5000);
+      timerRef.current = setInterval(advanceStep, 1500);
     }
   }, [advanceStep, wsActive]);
 

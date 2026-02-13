@@ -3,18 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Assembly } from "@/lib/types";
 import { useAssembly } from "@/context/AssemblyContext";
-import { useExecution } from "@/context/ExecutionContext";
 import { useConnectionStatus } from "@/lib/hooks";
 import { useWebSocket } from "@/context/WebSocketContext";
 import { RunControls } from "./RunControls";
 import { UploadDialog } from "./UploadDialog";
-
-function formatTime(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
 
 function ConnectionDot() {
   const { isConnected } = useConnectionStatus();
@@ -44,11 +36,7 @@ function ConnectionDot() {
 
 export function TopBar() {
   const { assemblies, assembly, selectAssembly, refreshAssemblies } = useAssembly();
-  const { executionState } = useExecution();
   const [uploadOpen, setUploadOpen] = useState(false);
-
-  const showTime = executionState.phase !== "idle";
-  const timeDisplay = showTime ? formatTime(executionState.elapsedMs) : "--:--";
 
   // Listen for upload trigger from StepList
   useEffect(() => {
@@ -61,7 +49,7 @@ export function TopBar() {
     (newAssembly: Assembly) => {
       setUploadOpen(false);
       refreshAssemblies();
-      selectAssembly(newAssembly.id);
+      selectAssembly(newAssembly.id, newAssembly);
     },
     [refreshAssemblies, selectAssembly],
   );
@@ -89,16 +77,6 @@ export function TopBar() {
             ))}
           </select>
           <ConnectionDot />
-        </div>
-
-        {/* Center: cycle time */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
-            Cycle
-          </span>
-          <span className="font-mono text-[36px] font-medium leading-none tabular-nums text-text-primary">
-            {timeDisplay}
-          </span>
         </div>
 
         {/* Right: run controls */}

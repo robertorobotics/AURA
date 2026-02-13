@@ -69,12 +69,12 @@ export function StepDetail() {
         </div>
       </div>
 
-      {/* Success criteria — spec-sheet style */}
-      <div className="flex items-baseline gap-3 border-t border-bg-tertiary pt-3">
-        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.06em] text-text-tertiary">
+      {/* Success criteria — card style */}
+      <div className="rounded-lg bg-bg-secondary p-2.5">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-text-tertiary">
           Success Criteria
         </span>
-        <p className="text-[12px] text-text-secondary">
+        <p className="mt-1 text-[12px] text-text-secondary">
           {step.successCriteria.type.replace(/_/g, " ")}
           {step.successCriteria.threshold != null &&
             ` (threshold: ${step.successCriteria.threshold})`}
@@ -86,27 +86,27 @@ export function StepDetail() {
       {/* Metrics */}
       {metrics && (
         <div className="grid grid-cols-3 gap-3">
-          <div>
+          <div className="rounded-lg bg-bg-secondary p-2.5">
             <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-text-tertiary">
               Success Rate
             </span>
-            <p className="font-mono text-[20px] font-medium tabular-nums text-text-primary">
+            <p className="font-mono text-[22px] font-medium tabular-nums text-text-primary">
               {Math.round(metrics.successRate * 100)}%
             </p>
           </div>
-          <div>
+          <div className="rounded-lg bg-bg-secondary p-2.5">
             <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-text-tertiary">
               Avg Duration
             </span>
-            <p className="font-mono text-[20px] font-medium tabular-nums text-text-primary">
+            <p className="font-mono text-[22px] font-medium tabular-nums text-text-primary">
               {formatMs(metrics.avgDurationMs)}
             </p>
           </div>
-          <div>
+          <div className="rounded-lg bg-bg-secondary p-2.5">
             <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-text-tertiary">
               Demos
             </span>
-            <p className="font-mono text-[20px] font-medium tabular-nums text-text-primary">
+            <p className="font-mono text-[22px] font-medium tabular-nums text-text-primary">
               {metrics.demoCount}
             </p>
           </div>

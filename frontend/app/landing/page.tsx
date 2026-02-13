@@ -1,12 +1,6 @@
 "use client";
 
-// ---------------------------------------------------------------------------
-// AURA Landing Page — /landing
-// Precision engineering aesthetic. Communicates "serious engineering company"
-// in 3 seconds.
-// ---------------------------------------------------------------------------
-
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useAssembly } from "@/context/AssemblyContext";
 import { ArchitectureGrid } from "@/components/landing/ArchitectureGrid";
@@ -19,41 +13,36 @@ const LandingViewer = dynamic(
   { ssr: false },
 );
 
-// ---------------------------------------------------------------------------
-// Pipeline step data
-// ---------------------------------------------------------------------------
+const STATS = [
+  { value: "57", unit: "steps", desc: "Gearbox assembly, fully autonomous" },
+  { value: "1\u20132", unit: "days", desc: "Setup time per new product" },
+  { value: "< 5", unit: "min", desc: "Per teaching demonstration" },
+  { value: "93%", unit: "", desc: "First-run success rate on trained steps" },
+];
 
 const PIPELINE = [
   {
     title: "Parse",
-    description:
-      "Upload a STEP file. AURA extracts parts, contacts, and geometry in seconds.",
+    body: "Upload a STEP file and the system extracts every part, detects contact surfaces, generates assembly meshes, and builds a full parts graph. No manual CAD annotation. The parser handles multi-level assemblies with hundreds of components.",
   },
   {
     title: "Plan",
-    description:
-      "Automatic assembly sequence. Primitives for easy steps, teaching slots for hard ones.",
+    body: "The planner reads the parts graph and generates a feasible assembly sequence automatically. Simple operations like pick-and-place get assigned motion primitives. Complex operations \u2014 press fits, insertions, screwing \u2014 get flagged for human teaching.",
   },
   {
     title: "Teach",
-    description:
-      "Demonstrate hard steps with force-feedback teleoperation. 10 demos, 5 minutes each.",
+    body: "An operator demonstrates difficult steps using a force-feedback leader arm. The leader mirrors the follower with gravity compensation and haptic reflection, so the demonstration feels natural. Ten demos of five minutes each is typically enough.",
   },
   {
     title: "Run",
-    description:
-      "Autonomous execution. Per-step learned policies. Human fallback on failure.",
+    body: "The execution engine walks the assembly graph step by step. Each step dispatches to either a motion primitive or a learned policy trained from the demonstrations. If a step fails, the system retries and escalates to a human operator as a last resort.",
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Landing Page
-// ---------------------------------------------------------------------------
-
 export default function LandingPage() {
   const { assembly } = useAssembly();
+  const [activeTab, setActiveTab] = useState(0);
 
-  // Scroll-reveal: observe .reveal elements, add .revealed on intersection
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -71,37 +60,49 @@ export default function LandingPage() {
     return () => observer.disconnect();
   }, []);
 
+  const navLink = "text-[13px] text-text-secondary hover:text-text-primary";
+
   return (
     <div className="h-screen overflow-y-auto scroll-smooth">
-      {/* ----------------------------------------------------------------- */}
-      {/* Section 1: Hero — left-aligned text, 3D viewer right              */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="flex min-h-screen items-center px-6 py-16">
+      <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-bg-tertiary bg-bg-primary/92 px-6 py-3 backdrop-blur-lg">
+        <div className="flex items-center gap-2">
+          <span className="text-[16px] font-bold tracking-[0.2em] text-text-primary">AURA</span>
+          <span className="text-[13px] text-text-tertiary">by Nextis</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <a href="#product" className={navLink}>Product</a>
+          <a href="#technology" className={navLink}>Technology</a>
+          <a href="/about" className={navLink}>About</a>
+          <a href="/blog" className={navLink}>Updates</a>
+          <a href="/docs" className={navLink}>Docs</a>
+          <a href="/" className="rounded-md bg-accent px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover">Open Platform</a>
+        </div>
+      </nav>
+
+      <section className="flex min-h-[85vh] items-center px-6 py-16">
         <div className="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-2">
           <div>
-            <h1 className="text-[64px] font-extrabold tracking-[0.08em] text-text-primary">
-              AURA
+            <span className="inline-block rounded-full bg-accent-light px-3 py-1 text-[12px] font-medium text-accent">
+              Assembly Automation Platform
+            </span>
+            <h1 className="mt-4 whitespace-pre-line text-[48px] font-extrabold leading-[1.1] tracking-tight text-text-primary">
+              {"Upload CAD.\nRobot assembles it."}
             </h1>
-            <p className="mt-2 text-[16px] font-normal text-text-secondary">
-              Autonomous Universal Robotic Assembly
-            </p>
-            <p className="mt-3 text-[14px] text-text-tertiary">
-              Upload a CAD file. The robot figures out the rest.
+            <p className="mt-4 max-w-md text-[16px] leading-relaxed text-text-secondary">
+              AURA turns STEP files into autonomous assembly programs. Parse the geometry,
+              plan the sequence, teach the hard steps, run it.
             </p>
             <div className="mt-8 flex items-center gap-4">
-              <a
-                href="#"
-                className="rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover"
-              >
-                Watch Demo
+              <a href="/" className="rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover">
+                Try Live Demo
               </a>
-              <a
-                href="/"
-                className="text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary"
-              >
-                Open Dashboard &rarr;
+              <a href="#product" className="rounded-md border border-bg-tertiary px-4 py-2 text-[13px] font-medium text-text-primary transition-colors hover:bg-bg-secondary">
+                How It Works &rarr;
               </a>
             </div>
+            <p className="mt-3 text-[12px] text-text-tertiary">
+              No signup required. Runs in your browser with mock hardware.
+            </p>
           </div>
           <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-bg-viewer">
             {assembly && <LandingViewer assembly={assembly} />}
@@ -109,73 +110,64 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* Section 2: The Problem — massive numbers                          */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="px-6 py-16 md:py-24">
-        <div className="mx-auto flex max-w-4xl flex-col gap-16 md:flex-row md:gap-24">
-          <div className="reveal flex flex-col">
-            <p className="font-mono text-[72px] font-semibold leading-none tabular-nums text-text-primary">
-              $43B
-            </p>
-            <p className="mt-4 text-[14px] leading-relaxed text-text-secondary">
-              spent annually on human assembly labor that can&apos;t be automated
-              because every product is different.
-            </p>
-          </div>
-          <div className="reveal flex flex-col">
-            <p className="font-mono text-[72px] font-semibold leading-none tabular-nums text-text-primary">
-              6+
-            </p>
-            <p className="text-[14px] text-text-tertiary">months</p>
-            <p className="mt-4 text-[14px] leading-relaxed text-text-secondary">
-              to program a new assembly with current solutions. Hard-coded
-              trajectories that break when anything changes. We need days.
-            </p>
-          </div>
+      <section className="border-y border-bg-tertiary px-6 py-12">
+        <div className="reveal mx-auto grid max-w-5xl grid-cols-2 gap-8 md:grid-cols-4">
+          {STATS.map((s) => (
+            <div key={s.value} className="text-center">
+              <p className="font-mono text-[48px] font-semibold leading-none tabular-nums text-text-primary">
+                {s.value}<span className="ml-1 text-[20px] text-text-tertiary">{s.unit}</span>
+              </p>
+              <p className="mt-2 text-[13px] text-text-secondary">{s.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* Section 3: How AURA Works — horizontal timeline                   */}
-      {/* ----------------------------------------------------------------- */}
-      <section id="how-it-works" className="px-6 py-16 md:py-24">
+      <section id="product" className="px-6 py-16 md:py-24">
         <div className="mx-auto max-w-5xl">
           <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
             How it works
           </p>
-          <div className="relative mt-10">
-            {/* Connecting line */}
-            <div className="absolute top-3 left-3 right-3 hidden h-px bg-bg-tertiary md:block" />
-            <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
+          <div className="mt-10 flex gap-8">
+            <div className="flex w-[280px] shrink-0 flex-col gap-1">
               {PIPELINE.map((step, i) => (
-                <div key={step.title} className="reveal relative">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-bg-tertiary bg-bg-primary font-mono text-[11px] font-semibold text-text-primary">
+                <button
+                  key={step.title}
+                  onClick={() => setActiveTab(i)}
+                  className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${
+                    i === activeTab
+                      ? "border-l-[3px] border-l-accent bg-accent-light"
+                      : "border-l-[3px] border-l-transparent hover:bg-bg-secondary"
+                  }`}
+                >
+                  <span className={`font-mono text-[14px] font-semibold ${i === activeTab ? "text-accent" : "text-text-tertiary"}`}>
                     {i + 1}
-                  </div>
-                  <h3 className="mt-3 text-[16px] font-semibold text-text-primary">
+                  </span>
+                  <span className={`text-[14px] font-medium ${i === activeTab ? "text-text-primary" : "text-text-secondary"}`}>
                     {step.title}
-                  </h3>
-                  <p className="mt-2 text-[13px] leading-relaxed text-text-secondary">
-                    {step.description}
-                  </p>
-                </div>
+                  </span>
+                </button>
               ))}
+            </div>
+            <div className="flex-1 rounded-lg bg-bg-secondary p-6">
+              <h3 className="text-[18px] font-semibold text-text-primary">
+                {PIPELINE[activeTab]?.title}
+              </h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-text-secondary">
+                {PIPELINE[activeTab]?.body}
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* Section 4: The Stack                                               */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="px-6 py-16 md:py-24">
+      <section id="technology" className="px-6 py-16 md:py-24">
         <div className="reveal mx-auto max-w-5xl">
           <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
-            The stack
+            Technology
           </p>
-          <p className="mt-3 text-[14px] text-text-secondary">
-            ~5,920 lines of Python. 29 source files. Every module tested.
+          <p className="mt-3 text-[20px] font-semibold text-text-primary">
+            Built for real hardware, not simulation
           </p>
           <div className="mt-10">
             <ArchitectureGrid />
@@ -183,43 +175,24 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* Section 5: The Vision                                              */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="px-6 py-16 md:py-24">
+      <section id="about" className="px-6 py-16 md:py-24">
         <div className="reveal mx-auto max-w-3xl text-center">
-          <p className="text-[20px] italic leading-[1.8] text-text-secondary">
+          <p className="text-[24px] font-light italic leading-[1.8] text-text-secondary">
             &ldquo;The PC fulfilled Turing&apos;s universal computer.
-            <br />
             AURA fulfills von Neumann&apos;s universal constructor.&rdquo;
           </p>
-          <p className="mt-10 text-[24px] font-bold text-text-primary">
-            Every home will have one.
-          </p>
-          <p className="mt-4 text-[13px] text-text-secondary">
-            Roberto De la Cruz &mdash; Founder, Nextis
-          </p>
-          <div className="mt-4 flex justify-center gap-4">
-            <a
-              href="https://github.com/FLASH-73/AURA"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[13px] text-text-tertiary underline underline-offset-2 transition-colors hover:text-text-primary"
-            >
-              GitHub
-            </a>
-            <a
-              href="mailto:roberto@nextis.tech"
-              className="text-[13px] text-text-tertiary underline underline-offset-2 transition-colors hover:text-text-primary"
-            >
-              Email
-            </a>
-            <a
-              href="/"
-              className="text-[13px] text-text-secondary underline underline-offset-2 transition-colors hover:text-text-primary"
-            >
-              Open Dashboard
-            </a>
+          <p className="mt-10 text-[18px] font-semibold text-text-primary">Nextis</p>
+          <p className="mt-1 text-[13px] text-text-tertiary">Hamburg, Germany</p>
+          <div className="mt-6 flex justify-center gap-6 text-[13px]">
+            {[
+              { href: "/about", label: "About" },
+              { href: "https://github.com/FLASH-73/AURA", label: "GitHub", ext: true },
+              { href: "mailto:roberto@nextis.tech", label: "Contact" },
+            ].map((l) => (
+              <a key={l.label} href={l.href} {...(l.ext ? { target: "_blank", rel: "noopener noreferrer" } : {})} className="text-text-secondary underline underline-offset-2 transition-colors hover:text-text-primary">
+                {l.label}
+              </a>
+            ))}
           </div>
         </div>
       </section>

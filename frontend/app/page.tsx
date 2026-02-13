@@ -83,8 +83,8 @@ export default function DashboardPage() {
       <DemoBanner />
 
       <main className="flex min-h-0 flex-1">
-        {/* Left: 3D Viewer (60%) */}
-        <div className="relative w-[60%]">
+        {/* Left: 3D Viewer (70%) */}
+        <div className="relative w-[70%]">
           <AssemblyViewer />
           <CameraPiP />
         </div>
@@ -92,8 +92,8 @@ export default function DashboardPage() {
         {/* Divider */}
         <div className="w-px bg-bg-tertiary" />
 
-        {/* Right: Steps + Detail (40%) */}
-        <div className="flex w-[40%] flex-col">
+        {/* Right: Steps + Detail (30%) */}
+        <div className="flex w-[30%] min-w-[300px] flex-col">
           <div className="flex-[55] overflow-y-auto border-b border-bg-tertiary">
             <StepList />
           </div>

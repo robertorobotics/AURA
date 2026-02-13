@@ -1,30 +1,30 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Backgrounds — cool zinc palette */
-  --color-bg-primary: #FAFAFA;
-  --color-bg-secondary: #F4F4F5;
-  --color-bg-tertiary: #E4E4E7;
-  --color-bg-viewer: #F8F8FA;
+  /* Backgrounds — warm palette */
+  --color-bg-primary: #FEFDFB;
+  --color-bg-secondary: #F9F7F3;
+  --color-bg-tertiary: #E8E3DD;
+  --color-bg-viewer: #FEFDFB;
   --color-bg-elevated: #FFFFFF;
 
-  /* Text — sharp contrast */
-  --color-text-primary: #09090B;
-  --color-text-secondary: #52525B;
-  --color-text-tertiary: #A1A1AA;
+  /* Text — warm stone */
+  --color-text-primary: #1C1917;
+  --color-text-secondary: #57534E;
+  --color-text-tertiary: #A8A29E;
 
-  /* Brand — precision dark */
-  --color-accent: #18181B;
-  --color-accent-hover: #27272A;
-  --color-accent-light: #F4F4F5;
+  /* Brand — warm orange accent */
+  --color-accent: #C2410C;
+  --color-accent-hover: #9A3412;
+  --color-accent-light: #FFF7ED;
 
-  /* Signal — interactive/active highlight (blue) */
-  --color-signal: #2563EB;
-  --color-signal-light: #EFF6FF;
+  /* Signal — deeper sky blue */
+  --color-signal: #0369A1;
+  --color-signal-light: #E0F2FE;
 
   /* Status */
   --color-status-success: #16A34A;
-  --color-status-running: #2563EB;
+  --color-status-running: #0369A1;
   --color-status-warning: #CA8A04;
   --color-status-error: #DC2626;
   --color-status-human: #7C3AED;
@@ -32,7 +32,7 @@
 
   /* Status backgrounds */
   --color-status-success-bg: #F0FDF4;
-  --color-status-running-bg: #EFF6FF;
+  --color-status-running-bg: #E0F2FE;
   --color-status-warning-bg: #FEFCE8;
   --color-status-error-bg: #FEF2F2;
   --color-status-human-bg: #F5F3FF;

@@ -209,7 +209,7 @@ export function AssemblyViewer() {
     <div className="relative h-full w-full" style={{ boxShadow: "inset 0 1px 0 0 rgba(0,0,0,0.04)" }}>
       <Canvas
         camera={{ position: layout.cameraPos, fov: 45, near: layout.near, far: layout.far }}
-        style={{ background: "radial-gradient(ellipse at center, #FAFAFA 0%, #F0F0F2 100%)" }}
+        style={{ background: "radial-gradient(ellipse at 45% 40%, #FEFDFB 0%, #F9F7F3 80%)" }}
         shadows
       >
         <CameraSetup layout={layout} controlsRef={controlsRef} />
