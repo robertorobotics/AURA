@@ -5,6 +5,7 @@ import type { Assembly } from "@/lib/types";
 import { useAssembly } from "@/context/AssemblyContext";
 import { useExecution } from "@/context/ExecutionContext";
 import { useConnectionStatus } from "@/lib/hooks";
+import { useWebSocket } from "@/context/WebSocketContext";
 import { RunControls } from "./RunControls";
 import { UploadDialog } from "./UploadDialog";
 
@@ -17,20 +18,30 @@ function formatTime(ms: number): string {
 
 function ConnectionIndicator() {
   const { isConnected } = useConnectionStatus();
+  const { connectionState } = useWebSocket();
+
+  const isReconnecting = connectionState === "connecting" && !isConnected;
+
+  let dotClass = "bg-status-error";
+  let label = "Offline";
+  if (isConnected && connectionState === "connected") {
+    dotClass = "bg-status-success";
+    label = "Connected";
+  } else if (isReconnecting) {
+    dotClass = "bg-amber-400";
+    label = "Reconnecting\u2026";
+  }
+
   return (
     <div className="flex items-center gap-1.5">
-      <div
-        className={`h-2 w-2 rounded-full ${isConnected ? "bg-status-success" : "bg-status-error"}`}
-      />
-      <span className="text-[11px] text-text-tertiary">
-        {isConnected ? "Connected" : "Offline"}
-      </span>
+      <div className={`h-2 w-2 rounded-full ${dotClass}`} />
+      <span className="text-[11px] text-text-tertiary">{label}</span>
     </div>
   );
 }
 
 export function TopBar() {
-  const { assemblies, assembly, selectAssembly, refreshAssemblies } = useAssembly();
+  const { assemblies, assembly, selectAssembly, refreshAssemblies, deleteAssembly } = useAssembly();
   const { executionState } = useExecution();
   const [uploadOpen, setUploadOpen] = useState(false);
 
@@ -45,6 +56,16 @@ export function TopBar() {
     },
     [refreshAssemblies, selectAssembly],
   );
+
+  const handleDelete = useCallback(() => {
+    if (!assembly) return;
+    const confirmed = window.confirm(
+      `Delete "${assembly.name}"?\n\nThis removes the assembly config and all mesh files.`,
+    );
+    if (confirmed) {
+      void deleteAssembly(assembly.id);
+    }
+  }, [assembly, deleteAssembly]);
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-bg-tertiary px-6">
@@ -70,6 +91,14 @@ export function TopBar() {
             className="rounded-md border border-bg-tertiary bg-bg-secondary px-2 py-1.5 text-[13px] text-text-secondary hover:text-text-primary"
           >
             +
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={!assembly}
+            className="rounded-md border border-bg-tertiary bg-bg-secondary px-2 py-1.5 text-[13px] text-text-secondary hover:text-red-500 disabled:opacity-30 disabled:pointer-events-none"
+            title="Delete assembly"
+          >
+            &times;
           </button>
         </div>
         <ConnectionIndicator />

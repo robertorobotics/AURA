@@ -74,14 +74,14 @@ export function RecordingControls({ stepId, assemblyId }: RecordingControlsProps
 
   const handleDiscard = useCallback(async () => {
     try {
-      await api.discardRecording(stepId);
+      await api.discardRecording();
     } catch {
       // Discard may fail if backend is unavailable
     }
     setActive(false);
     setStartTime(null);
     void mutate(demosKey);
-  }, [stepId, demosKey, mutate]);
+  }, [demosKey, mutate]);
 
   return (
     <div>

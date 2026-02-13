@@ -9,10 +9,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { AuraWebSocket } from "@/lib/ws";
+import { AuraWebSocket, type ConnectionState } from "@/lib/ws";
 
 interface WebSocketContextValue {
   connected: boolean;
+  connectionState: ConnectionState;
   lastMessage: unknown;
 }
 
@@ -22,6 +23,7 @@ const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000/execution/
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const [connected, setConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
   const [lastMessage, setLastMessage] = useState<unknown>(null);
   const wsRef = useRef<AuraWebSocket | null>(null);
 
@@ -32,11 +34,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     const unsubscribe = ws.onMessage((data) => {
       setLastMessage(data);
       setConnected(ws.connected);
+      setConnectionState(ws.state);
     });
 
     ws.connect();
-    // Poll connection state since mock mode sets it synchronously
-    const pollId = setInterval(() => setConnected(ws.connected), 1000);
+    // Poll connection state for reconnection transitions
+    const pollId = setInterval(() => {
+      setConnected(ws.connected);
+      setConnectionState(ws.state);
+    }, 1000);
 
     return () => {
       unsubscribe();
@@ -46,8 +52,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<WebSocketContextValue>(
-    () => ({ connected, lastMessage }),
-    [connected, lastMessage],
+    () => ({ connected, connectionState, lastMessage }),
+    [connected, connectionState, lastMessage],
   );
 
   return (

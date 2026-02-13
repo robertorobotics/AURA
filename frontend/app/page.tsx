@@ -8,6 +8,7 @@ import { StepList } from "@/components/StepList";
 import { StepDetail } from "@/components/StepDetail";
 import { CameraPiP } from "@/components/CameraPiP";
 import { TeachingOverlay } from "@/components/TeachingOverlay";
+import { DemoBanner } from "@/components/DemoBanner";
 import { useAssembly } from "@/context/AssemblyContext";
 import { useExecution } from "@/context/ExecutionContext";
 import { useKeyboardShortcuts } from "@/lib/hooks";
@@ -79,6 +80,7 @@ export default function DashboardPage() {
   return (
     <div className="flex h-screen flex-col">
       <TopBar />
+      <DemoBanner />
 
       <main className="flex min-h-0 flex-1">
         {/* Left: 3D Viewer (60%) */}

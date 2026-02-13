@@ -121,3 +121,10 @@ export interface TeleopState {
   active: boolean;
   arms: string[];
 }
+
+export interface SystemInfo {
+  version: string;
+  mode: "mock" | "hardware";
+  assemblies: number;
+  lerobotAvailable: boolean;
+}

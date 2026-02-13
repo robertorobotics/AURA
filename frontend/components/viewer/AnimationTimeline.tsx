@@ -22,8 +22,6 @@ export function AnimationTimeline({
   const fillRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
 
-  if (totalSteps === 0) return null;
-
   // 60fps handle position sync via rAF (reads from ref, no React re-renders)
   useEffect(() => {
     let raf: number;
@@ -81,6 +79,8 @@ export function AnimationTimeline({
     },
     [totalSteps, onScrub, onScrubStart, onScrubEnd],
   );
+
+  if (totalSteps === 0) return null;
 
   return (
     <div className="absolute bottom-3 left-6 right-6 flex items-center gap-2">

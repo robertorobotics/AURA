@@ -4,6 +4,7 @@ import type {
   Demo,
   ExecutionState,
   StepMetrics,
+  SystemInfo,
   TeleopState,
   TrainConfig,
   TrainStatus,
@@ -52,6 +53,11 @@ async function patch<T = void>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function del(path: string): Promise<void> {
+  const res = await fetch(`${BASE}${path}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+}
+
 // Mock fallback — only catches network errors (TypeError from fetch when
 // server is unreachable). HTTP errors (4xx/5xx) propagate normally.
 async function withMockFallback<T>(fetcher: () => Promise<T>, fallback: T): Promise<T> {
@@ -70,6 +76,7 @@ export const api = {
   fetchAssemblySummaries: () => get<AssemblySummary[]>("/assemblies"),
   fetchAssembly: (id: string) => get<Assembly>(`/assemblies/${id}`),
   fetchHealth: () => get<{ status: string }>("/health"),
+  fetchSystemInfo: () => get<SystemInfo>("/system/info"),
 
   // --- Fallback-wrapped fetchers for imperative calls ---
   getAssemblies: () =>
@@ -88,7 +95,8 @@ export const api = {
     ),
 
   // --- Execution ---
-  startAssembly: (id: string) => post("/execution/start", { assembly_id: id }),
+  startAssembly: (id: string, speed?: number) =>
+    post("/execution/start", { assembly_id: id, speed: speed ?? 1.0 }),
   pauseExecution: () => post("/execution/pause"),
   resumeExecution: () => post("/execution/resume"),
   stopExecution: () => post("/execution/stop"),
@@ -111,7 +119,7 @@ export const api = {
   // --- Recording ---
   startRecording: (stepId: string) => post(`/recording/step/${stepId}/start`),
   stopRecording: () => post("/recording/stop"),
-  discardRecording: (stepId: string) => post(`/recording/step/${stepId}/discard`),
+  discardRecording: () => post("/recording/discard"),
   getDemos: (assemblyId: string, stepId: string) =>
     withMockFallback(
       () => get<Demo[]>(`/recording/demos/${assemblyId}/${stepId}`),
@@ -130,4 +138,7 @@ export const api = {
 
   // --- Upload ---
   uploadCAD: (file: File) => postFile<Assembly>("/assemblies/upload", file),
+
+  // --- Delete ---
+  deleteAssembly: (id: string) => del(`/assemblies/${id}`),
 };

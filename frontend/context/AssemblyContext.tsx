@@ -4,7 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -21,6 +23,7 @@ interface AssemblyContextValue {
   selectStep: (stepId: string | null) => void;
   selectAssembly: (assemblyId: string) => void;
   refreshAssemblies: () => void;
+  deleteAssembly: (id: string) => Promise<void>;
 }
 
 const AssemblyContext = createContext<AssemblyContextValue | null>(null);
@@ -42,6 +45,17 @@ export function AssemblyProvider({ children }: { children: ReactNode }) {
     void mutateAssemblies();
   }, [mutateAssemblies]);
 
+  // Auto-select gearbox if available (more impressive demo than bearing housing)
+  const autoSelected = useRef(false);
+  useEffect(() => {
+    if (autoSelected.current) return;
+    const gearbox = assemblies.find((a) => a.id === "assem_gearbox");
+    if (gearbox) {
+      autoSelected.current = true;
+      setAssemblyId(gearbox.id);
+    }
+  }, [assemblies]);
+
   const { data: assembly = null, isLoading } = useSWR<Assembly>(
     assemblyId ? `/assemblies/${assemblyId}` : null,
     () => api.fetchAssembly(assemblyId),
@@ -60,6 +74,19 @@ export function AssemblyProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const deleteAssembly = useCallback(
+    async (id: string) => {
+      await api.deleteAssembly(id);
+      const updated = await mutateAssemblies();
+      if (id === assemblyId) {
+        const remaining = updated?.filter((a) => a.id !== id);
+        setAssemblyId(remaining?.[0]?.id ?? MOCK_SUMMARIES[0]?.id ?? "");
+        setSelectedStepId(null);
+      }
+    },
+    [assemblyId, mutateAssemblies],
+  );
+
   const value = useMemo<AssemblyContextValue>(
     () => ({
       assemblies,
@@ -69,8 +96,9 @@ export function AssemblyProvider({ children }: { children: ReactNode }) {
       selectStep,
       selectAssembly,
       refreshAssemblies,
+      deleteAssembly,
     }),
-    [assemblies, assembly, isLoading, selectedStepId, selectStep, selectAssembly, refreshAssemblies],
+    [assemblies, assembly, isLoading, selectedStepId, selectStep, selectAssembly, refreshAssemblies, deleteAssembly],
   );
 
   return (

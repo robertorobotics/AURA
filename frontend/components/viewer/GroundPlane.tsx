@@ -2,26 +2,36 @@
 
 import { Grid, ContactShadows } from "@react-three/drei";
 
-export function GroundPlane() {
+interface GroundPlaneProps {
+  groundY?: number;
+  cellSize?: number;
+  sectionSize?: number;
+}
+
+export function GroundPlane({
+  groundY = -0.02,
+  cellSize = 0.02,
+  sectionSize = 0.1,
+}: GroundPlaneProps) {
   return (
     <group>
       <Grid
         args={[2, 2]}
-        cellSize={0.02}
+        cellSize={cellSize}
         cellColor="#E8E7E4"
-        sectionSize={0.1}
+        sectionSize={sectionSize}
         sectionColor="#D4D3CF"
-        fadeDistance={1}
+        fadeDistance={sectionSize * 10}
         fadeStrength={1}
         infiniteGrid
-        position={[0, -0.02, 0]}
+        position={[0, groundY, 0]}
       />
       <ContactShadows
-        position={[0, -0.019, 0]}
+        position={[0, groundY + 0.001, 0]}
         opacity={0.25}
-        scale={0.5}
+        scale={sectionSize * 5}
         blur={2}
-        far={0.15}
+        far={sectionSize * 1.5}
       />
     </group>
   );
