@@ -44,19 +44,25 @@ class Policy:
         """Action dimensionality."""
         return self._config["action_dim"]
 
+    @property
+    def joint_keys(self) -> list[str]:
+        """Ordered joint key names from training data."""
+        return self._config.get("joint_keys", [])
+
     def predict(self, observation: dict[str, float]) -> np.ndarray:
         """Run inference on a single observation.
 
         Args:
-            observation: Dict mapping joint names to float values. Values are
-                sorted by key and stacked into the input tensor.
+            observation: Dict mapping joint names to float values. If the
+                checkpoint stores ``joint_keys``, those keys are used to
+                order the input. Otherwise falls back to
+                ``sorted(observation.keys())``.
 
         Returns:
             Action array of shape ``(chunk_size, action_dim)``.
         """
-        obs_array = np.array(
-            [observation[k] for k in sorted(observation)], dtype=np.float32
-        )
+        keys = self._config.get("joint_keys") or sorted(observation)
+        obs_array = np.array([observation[k] for k in keys], dtype=np.float32)
         with torch.no_grad():
             obs_tensor = torch.tensor(obs_array).unsqueeze(0)
             actions = self._model(obs_tensor)
@@ -119,6 +125,19 @@ class PolicyLoader:
         except Exception as e:
             logger.error("Failed to load policy from %s: %s", ckpt_path, e)
             return None
+
+    def exists(self, assembly_id: str, step_id: str) -> bool:
+        """Check whether a trained checkpoint exists for the given step.
+
+        Args:
+            assembly_id: Assembly identifier.
+            step_id: Step identifier.
+
+        Returns:
+            True if a policy.pt checkpoint file exists on disk.
+        """
+        ckpt_path = self.POLICIES_DIR / assembly_id / step_id / "policy.pt"
+        return ckpt_path.exists()
 
     def clear_cache(self) -> None:
         """Clear all cached policies."""

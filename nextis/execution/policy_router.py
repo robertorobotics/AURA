@@ -58,6 +58,8 @@ class PolicyRouter:
             return await self._run_primitive(step, start_ms)
         if step.handler == "policy":
             return await self._run_policy(step, start_ms)
+        if step.handler == "rl_finetune":
+            return await self._run_rl_policy(step, start_ms)
 
         logger.error("Unknown handler type '%s' for step %s", step.handler, step.id)
         return StepResult(
@@ -129,15 +131,21 @@ class PolicyRouter:
         )
 
         try:
-            # Get initial observation and run the action chunk
-            obs = self._robot.get_observation() if self._robot else {}
+            # Use MockRobot for inference when no real robot is connected.
+            robot = self._robot
+            if robot is None:
+                from nextis.hardware.mock import MockRobot
+
+                robot = MockRobot()
+
+            obs = robot.get_observation()
             actions = policy.predict(obs)
+            action_keys = policy.joint_keys or sorted(obs.keys())
 
             for i in range(policy.chunk_size):
-                if self._robot:
-                    action = actions[min(i, len(actions) - 1)]
-                    action_dict = dict(zip(sorted(obs.keys()), action, strict=False))
-                    self._robot.send_action(action_dict)
+                action = actions[min(i, len(actions) - 1)]
+                action_dict = dict(zip(action_keys, action, strict=False))
+                robot.send_action(action_dict)
                 await asyncio.sleep(1 / 50)  # 50 Hz control rate
 
             return StepResult(
@@ -152,5 +160,62 @@ class PolicyRouter:
                 success=False,
                 duration_ms=time.monotonic() * 1000 - start_ms,
                 handler_used="policy",
+                error_message=str(e),
+            )
+
+    async def _run_rl_policy(self, step: AssemblyStep, start_ms: float) -> StepResult:
+        """Execute a step using an RL-finetuned SAC policy.
+
+        Loads the SAC agent from ``policy_rl.pt``. If no RL checkpoint exists,
+        falls back to BC inference via ``_run_policy``.
+        """
+        from pathlib import Path
+
+        rl_ckpt = Path("data/policies") / self._assembly_id / step.id / "policy_rl.pt"
+
+        if not rl_ckpt.exists():
+            logger.info(
+                "No RL checkpoint for step %s, falling back to BC policy",
+                step.id,
+            )
+            return await self._run_policy(step, start_ms)
+
+        try:
+            import numpy as np
+
+            from nextis.control.motion_helpers import joints_to_action, obs_to_joints
+            from nextis.learning.sac import SACAgent
+
+            agent = SACAgent.load(rl_ckpt)
+
+            robot = self._robot
+            if robot is None:
+                from nextis.hardware.mock import MockRobot
+
+                robot = MockRobot()
+
+            logger.info("Running RL policy inference for step %s", step.id)
+
+            # Run deterministic inference for a fixed horizon
+            max_steps = 100
+            for _ in range(max_steps):
+                obs = robot.get_observation()
+                obs_array = np.array(obs_to_joints(obs), dtype=np.float32)
+                action = agent.select_action(obs_array, deterministic=True)
+                robot.send_action(joints_to_action(action.tolist()))
+                await asyncio.sleep(1 / 50)
+
+            return StepResult(
+                success=True,
+                duration_ms=time.monotonic() * 1000 - start_ms,
+                handler_used="rl_finetune",
+            )
+
+        except Exception as e:
+            logger.error("RL policy inference failed on step %s: %s", step.id, e)
+            return StepResult(
+                success=False,
+                duration_ms=time.monotonic() * 1000 - start_ms,
+                handler_used="rl_finetune",
                 error_message=str(e),
             )

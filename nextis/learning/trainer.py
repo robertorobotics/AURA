@@ -250,6 +250,7 @@ class PolicyTrainer:
                     "chunk_size": cfg.chunk_size,
                     "hidden_dim": cfg.hidden_dim,
                     "architecture": "act",
+                    "joint_keys": dataset_info.joint_keys,
                 },
             },
             str(ckpt_path),

@@ -7,7 +7,7 @@ train/val numpy arrays suitable for the PolicyTrainer.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -34,6 +34,7 @@ class DatasetInfo:
         val_frames: Number of validation frames.
         obs_dim: Observation dimensionality (number of joints).
         action_dim: Action dimensionality (number of joints).
+        joint_keys: Ordered joint names from the HDF5 observation group.
     """
 
     assembly_id: str
@@ -43,6 +44,7 @@ class DatasetInfo:
     val_frames: int
     obs_dim: int
     action_dim: int
+    joint_keys: list[str] = field(default_factory=list)
 
 
 class StepDataset:
@@ -80,12 +82,12 @@ class StepDataset:
         demo_files = sorted(self._demo_dir.glob("*.hdf5"))
         if not demo_files:
             raise TrainingError(
-                f"No demos found for {self._assembly_id}/{self._step_id} "
-                f"in {self._demo_dir}"
+                f"No demos found for {self._assembly_id}/{self._step_id} in {self._demo_dir}"
             )
 
         all_obs: list[np.ndarray] = []
         all_actions: list[np.ndarray] = []
+        joint_keys: list[str] = []
 
         for fpath in demo_files:
             try:
@@ -94,6 +96,8 @@ class StepDataset:
                     act = hf["action/joint_positions"][:]
                     all_obs.append(obs)
                     all_actions.append(act)
+                    if not joint_keys and "joint_keys" in hf["observation"].attrs:
+                        joint_keys = [str(k) for k in hf["observation"].attrs["joint_keys"]]
                     logger.debug("Loaded %s: %d frames", fpath.name, len(obs))
             except Exception as e:
                 logger.warning("Skipping corrupt demo %s: %s", fpath.name, e)
@@ -111,6 +115,14 @@ class StepDataset:
         n = min(len(obs), len(actions))
         obs = obs[:n]
         actions = actions[:n]
+
+        if not joint_keys:
+            joint_keys = [f"joint_{i}" for i in range(obs.shape[1])]
+            logger.warning(
+                "No joint_keys in demos for %s/%s — using synthetic keys",
+                self._assembly_id,
+                self._step_id,
+            )
 
         # 80/20 train/val split
         split = int(n * 0.8)
@@ -133,6 +145,7 @@ class StepDataset:
             val_frames=n - split,
             obs_dim=obs.shape[1],
             action_dim=actions.shape[1],
+            joint_keys=joint_keys,
         )
 
         logger.info(
