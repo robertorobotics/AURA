@@ -58,18 +58,20 @@ async def start_teleop(
         raise HTTPException(status_code=409, detail="Teleop session already active")
 
     if mock:
-        robot, leader, safety, mapper = _create_mock_stack()
+        robot, leader, safety, mapper, gripper_ff, joint_ff = _create_mock_stack()
     else:
-        raise HTTPException(
-            status_code=501,
-            detail="Real hardware teleop not yet implemented. Use mock=true.",
-        )
+        try:
+            robot, leader, safety, mapper, gripper_ff, joint_ff = _create_real_stack(request.arms)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     _teleop_loop = TeleopLoop(
         robot=robot,
         leader=leader,
         safety=safety,
         joint_mapper=mapper,
+        gripper_ff=gripper_ff,
+        joint_ff=joint_ff,
     )
     _teleop_loop.start()
     _session_id = str(uuid.uuid4())[:8]
@@ -140,4 +142,81 @@ def _create_mock_stack() -> tuple:
     mapper.joint_mapping = {f"{n}.pos": f"{n}.pos" for n in MOCK_JOINT_NAMES}
     mapper.value_mode = ValueMode.FLOAT
 
-    return robot, leader, safety, mapper
+    return robot, leader, safety, mapper, None, None
+
+
+def _create_real_stack(arm_selection: list[str]) -> tuple:
+    """Create real hardware stack from connected arms in the ArmRegistryService.
+
+    Finds a connected leader-follower pairing, retrieves robot and leader
+    instances, and builds the full control stack with joint mapping and
+    force feedback.
+
+    Args:
+        arm_selection: Arm IDs to use, or ``["default"]`` for first pairing.
+
+    Returns:
+        Tuple of (robot, leader, safety, mapper, gripper_ff, joint_ff).
+
+    Raises:
+        ValueError: If no connected pairing found or instances unavailable.
+    """
+    from nextis.api.routes.hardware import get_registry
+    from nextis.control.force_feedback import GripperForceFeedback, JointForceFeedback
+    from nextis.control.joint_mapping import JointMapper
+    from nextis.control.safety import SafetyLayer
+    from nextis.hardware.types import ConnectionStatus, MotorType
+
+    registry = get_registry()
+
+    # Find a pairing where both arms are connected.
+    pairing = None
+    for p in registry.pairings:
+        leader_ok = registry.arm_status.get(p.leader_id) == ConnectionStatus.CONNECTED
+        follower_ok = registry.arm_status.get(p.follower_id) == ConnectionStatus.CONNECTED
+        if not (leader_ok and follower_ok):
+            continue
+        # If caller specified specific arm IDs, filter by them.
+        if (
+            arm_selection != ["default"]
+            and p.leader_id not in arm_selection
+            and p.follower_id not in arm_selection
+        ):
+            continue
+        pairing = p
+        break
+
+    if pairing is None:
+        raise ValueError(
+            "No connected arm pairing found. "
+            "Connect both leader and follower via POST /hardware/connect first."
+        )
+
+    robot = registry.get_arm_instance(pairing.follower_id)
+    leader = registry.get_arm_instance(pairing.leader_id)
+
+    if robot is None or leader is None:
+        raise ValueError(
+            f"Arm instances not available for pairing '{pairing.name}'. "
+            "Did connect_arm succeed for both arms?"
+        )
+
+    safety = SafetyLayer(robot_lock=threading.Lock())
+
+    mapper = JointMapper(arm_registry=registry)
+    mapper.compute_mappings(
+        pairings=registry.get_pairings(),
+        active_arms=[pairing.leader_id, pairing.follower_id],
+        leader=leader,
+    )
+
+    # Enable force feedback for Damiao followers.
+    gripper_ff = None
+    joint_ff = None
+    follower_arm = registry.arms.get(pairing.follower_id)
+    if follower_arm and follower_arm.motor_type == MotorType.DAMIAO:
+        gripper_ff = GripperForceFeedback()
+        joint_ff = JointForceFeedback()
+        logger.info("Force feedback enabled for Damiao follower %s", pairing.follower_id)
+
+    return robot, leader, safety, mapper, gripper_ff, joint_ff

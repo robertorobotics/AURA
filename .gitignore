@@ -53,6 +53,9 @@ out/
 # Logs
 *.log
 
+# Arm config (machine-specific ports)
+configs/arms/settings.yaml
+
 # Calibration data (machine-specific)
 configs/calibration/*/
 

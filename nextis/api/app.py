@@ -13,7 +13,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from nextis.api.routes import analytics, assembly, execution, recording, teleop, training
+from nextis.api.routes import (
+    analytics,
+    assembly,
+    execution,
+    hardware,
+    homing,
+    recording,
+    teleop,
+    training,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +42,8 @@ app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 app.include_router(teleop.router, prefix="/teleop", tags=["teleop"])
 app.include_router(recording.router, prefix="/recording", tags=["recording"])
 app.include_router(training.router, prefix="/training", tags=["training"])
+app.include_router(hardware.router, prefix="/hardware", tags=["hardware"])
+app.include_router(homing.router, prefix="/homing", tags=["homing"])
 
 # Serve GLB mesh files for the 3D assembly viewer
 _MESHES_DIR = Path(__file__).resolve().parents[2] / "data" / "meshes"
@@ -50,9 +61,26 @@ async def health() -> dict[str, str]:
 async def system_info() -> dict:
     """System information for the frontend demo banner."""
     configs_dir = Path(__file__).resolve().parents[2] / "configs" / "assemblies"
+
+    lerobot_available = False
+    try:
+        import lerobot  # noqa: F401
+
+        lerobot_available = True
+    except ImportError:
+        pass
+
+    mode = "mock"
+    try:
+        summary = hardware.get_registry().get_status_summary()
+        if summary["connected"] > 0:
+            mode = "hardware"
+    except Exception:
+        pass
+
     return {
         "version": "0.1.0",
-        "mode": "mock",
+        "mode": mode,
         "assemblies": len(list(configs_dir.glob("*.json"))),
-        "lerobotAvailable": False,
+        "lerobotAvailable": lerobot_available,
     }

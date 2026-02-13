@@ -146,6 +146,7 @@ class TrainingJobState(BaseModel):
     status: str = "pending"
     progress: float = 0.0
     error: str | None = None
+    checkpoint_path: str | None = Field(None, alias="checkpointPath")
 
 
 # ------------------------------------------------------------------
@@ -175,3 +176,72 @@ class PlanAnalysisResponse(BaseModel):
     difficulty_score: int = Field(5, alias="difficultyScore")
     estimated_teaching_minutes: int = Field(0, alias="estimatedTeachingMinutes")
     summary: str = ""
+
+
+# ------------------------------------------------------------------
+# Hardware schemas
+# ------------------------------------------------------------------
+
+
+class ArmStatus(BaseModel):
+    """Status of a single arm in the registry."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    name: str
+    role: str
+    motor_type: str = Field(alias="motorType")
+    port: str
+    enabled: bool = True
+    structural_design: str | None = Field(None, alias="structuralDesign")
+    calibrated: bool = False
+    status: str = "disconnected"
+
+
+class PairingInfo(BaseModel):
+    """A leader-follower pairing."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    leader_id: str = Field(alias="leaderId")
+    follower_id: str = Field(alias="followerId")
+    name: str
+
+
+class HardwareStatusResponse(BaseModel):
+    """Full hardware status: all arms, pairings, and summary counts."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    arms: list[ArmStatus]
+    pairings: list[PairingInfo]
+    total_arms: int = Field(0, alias="totalArms")
+    connected: int = 0
+    disconnected: int = 0
+    leaders: int = 0
+    followers: int = 0
+
+
+class ConnectRequest(BaseModel):
+    """Request to connect or disconnect a single arm."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    arm_id: str = Field(alias="armId")
+
+
+# ------------------------------------------------------------------
+# Homing schemas
+# ------------------------------------------------------------------
+
+
+class HomingStartRequest(BaseModel):
+    """Request to start homing a follower arm."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    arm_id: str = Field(alias="armId")
+    home_pos: dict[str, float] | None = Field(None, alias="homePos")
+    duration: float = 10.0
+    velocity: float = 0.05

@@ -1,0 +1,47 @@
+# AURA — AIRA Zero Assembly Platform
+# Copy to settings.yaml and adjust ports/IDs for your setup.
+#
+# Port discovery:
+#   macOS:   ls /dev/tty.usbserial-*  (Dynamixel)
+#            ls /dev/tty.usbmodem*    (CAN-to-serial)
+#   Linux:   ls /dev/ttyUSB*          (Dynamixel)
+#            ls /dev/ttyACM*          (CAN-to-serial)
+
+arms:
+  left_follower:
+    name: "Left Follower"
+    role: "follower"
+    motor_type: "damiao"
+    port: "/dev/ttyUSB0"  # CAN-to-serial bridge
+    structural_design: "damiao_7dof"
+    config:
+      velocity_limit: 0.3
+      motors:  # documentation only — not parsed by arm_registry
+        - {name: "base", type: "J8009P", id: 1}
+        - {name: "shoulder", type: "J8009P", id: 2}
+        - {name: "elbow", type: "J4340P", id: 3}
+        - {name: "wrist_pitch", type: "J4340P", id: 4}
+        - {name: "wrist_roll", type: "J4340P", id: 5}
+        - {name: "wrist_yaw", type: "J4340P", id: 6}
+        - {name: "gripper", type: "J4310", id: 7}
+
+  left_leader:
+    name: "Left Leader"
+    role: "leader"
+    motor_type: "dynamixel_xl330"
+    port: "/dev/ttyACM0"  # Waveshare USB adapter
+    structural_design: "so100"
+    config:
+      motors:  # documentation only
+        - {name: "base", id: 1}
+        - {name: "shoulder", id: 2}
+        - {name: "elbow", id: 3}
+        - {name: "wrist_pitch", id: 4}
+        - {name: "wrist_roll", id: 5}
+        - {name: "wrist_yaw", id: 6}
+        - {name: "gripper", id: 7}
+
+pairings:
+  - leader: "left_leader"
+    follower: "left_follower"
+    name: "Left Pair"
