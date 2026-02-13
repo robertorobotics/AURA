@@ -1,0 +1,9 @@
+name: nextis
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - cadquery-ocp-novtk
+    - -e ".[dev]"
