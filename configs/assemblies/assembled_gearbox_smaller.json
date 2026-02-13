@@ -1,0 +1,626 @@
+{
+  "id": "assembled_gearbox_smaller",
+  "name": "assembled_gearbox_smaller",
+  "parts": {
+    "ring_gear_v1": {
+      "id": "ring_gear_v1",
+      "cadFile": null,
+      "meshFile": "/meshes/assembled_gearbox_smaller/ring_gear_v1.glb",
+      "graspPoints": [],
+      "position": [
+        -0.003032861,
+        0.000164023,
+        -0.002300359
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "geometry": "box",
+      "dimensions": [
+        0.065879807,
+        0.065879807,
+        0.024012588
+      ],
+      "color": "#7A7974"
+    },
+    "6708_bearing_v1": {
+      "id": "6708_bearing_v1",
+      "cadFile": null,
+      "meshFile": "/meshes/assembled_gearbox_smaller/6708_bearing_v1.glb",
+      "graspPoints": [],
+      "position": [
+        -0.028032861000000003,
+        -0.024835977,
+        0.049699641
+      ],
+      "rotation": [
+        -1.570796,
+        0.0,
+        0.0
+      ],
+      "geometry": "box",
+      "dimensions": [
+        0.05,
+        0.006,
+        0.05
+      ],
+      "color": "#C4A882"
+    },
+    "satellite_top_v1": {
+      "id": "satellite_top_v1",
+      "cadFile": null,
+      "meshFile": "/meshes/assembled_gearbox_smaller/satellite_top_v1.glb",
+      "graspPoints": [],
+      "position": [
+        -0.053032861,
+        0.050164023,
+        0.042699641
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "geometry": "box",
+      "dimensions": [
+        0.042,
+        0.042,
+        0.011
+      ],
+      "color": "#7A7974"
+    },
+    "satelite_gear_v1": {
+      "id": "satelite_gear_v1",
+      "cadFile": null,
+      "meshFile": "/meshes/assembled_gearbox_smaller/satelite_gear_v1.glb",
+      "graspPoints": [],
+      "position": [
+        -0.003032861,
+        0.000164023,
+        -0.002300359
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "geometry": "box",
+      "dimensions": [
+        0.014,
+        0.014,
+        0.01
+      ],
+      "color": "#8C9488"
+    },
+    "satelite_gear_v1_2": {
+      "id": "satelite_gear_v1_2",
+      "cadFile": null,
+      "meshFile": "/meshes/assembled_gearbox_smaller/satelite_gear_v1_2.glb",
+      "graspPoints": [],
+      "position": [
+        -0.003032861,
+        0.000164023,
+        -0.002300359
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "geometry": "box",
+      "dimensions": [
+        0.014001051,
+        0.014001051,
+        0.010001051
+      ],
+      "color": "#C0B8B0"
+    },
+    "satelite_gear_v1_3": {
+      "id": "satelite_gear_v1_3",
+      "cadFile": null,
+      "meshFile": "/meshes/assembled_gearbox_smaller/satelite_gear_v1_3.glb",
+      "graspPoints": [],
+      "position": [
+        -0.003032861,
+        0.000164023,
+        -0.002300359
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "geometry": "box",
+      "dimensions": [
+        0.014001051,
+        0.014001051,
+        0.010001051
+      ],
+      "color": "#B0AEA8"
+    },
+    "satelite_gear_v1_4": {
+      "id": "satelite_gear_v1_4",
+      "cadFile": null,
+      "meshFile": "/meshes/assembled_gearbox_smaller/satelite_gear_v1_4.glb",
+      "graspPoints": [],
+      "position": [
+        -0.003032861,
+        0.000164023,
+        -0.002300359
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "geometry": "box",
+      "dimensions": [
+        0.014001051,
+        0.014001051,
+        0.010001051
+      ],
+      "color": "#8A8884"
+    },
+    "satellite_base_v1": {
+      "id": "satellite_base_v1",
+      "cadFile": null,
+      "meshFile": "/meshes/assembled_gearbox_smaller/satellite_base_v1.glb",
+      "graspPoints": [],
+      "position": [
+        -0.029211534,
+        0.062733524,
+        0.027699641
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        -0.383972
+      ],
+      "geometry": "box",
+      "dimensions": [
+        0.042528599,
+        0.043057197000000005,
+        0.004
+      ],
+      "color": "#B8B0A0"
+    },
+    "sun_gear_v1": {
+      "id": "sun_gear_v1",
+      "cadFile": null,
+      "meshFile": "/meshes/assembled_gearbox_smaller/sun_gear_v1.glb",
+      "graspPoints": [],
+      "position": [
+        -0.003032861,
+        0.000164023,
+        -0.002300359
+      ],
+      "rotation": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "geometry": "sphere",
+      "dimensions": [
+        0.0135
+      ],
+      "color": "#9CABA3"
+    }
+  },
+  "steps": {
+    "step_001": {
+      "id": "step_001",
+      "name": "Place ring_gear_v1 as base",
+      "partIds": [
+        "ring_gear_v1"
+      ],
+      "dependencies": [],
+      "handler": "primitive",
+      "primitiveType": "place",
+      "primitiveParams": {
+        "part_id": "ring_gear_v1"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "position",
+        "threshold": null,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_002": {
+      "id": "step_002",
+      "name": "Pick satellite_top_v1",
+      "partIds": [
+        "satellite_top_v1"
+      ],
+      "dependencies": [
+        "step_001"
+      ],
+      "handler": "primitive",
+      "primitiveType": "pick",
+      "primitiveParams": {
+        "part_id": "satellite_top_v1"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_threshold",
+        "threshold": 0.5,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_003": {
+      "id": "step_003",
+      "name": "Assemble satellite_top_v1",
+      "partIds": [
+        "satellite_top_v1",
+        "satellite_base_v1"
+      ],
+      "dependencies": [
+        "step_002"
+      ],
+      "handler": "primitive",
+      "primitiveType": "place",
+      "primitiveParams": {
+        "part_id": "satellite_top_v1"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "position",
+        "threshold": null,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_004": {
+      "id": "step_004",
+      "name": "Pick 6708_bearing_v1",
+      "partIds": [
+        "6708_bearing_v1"
+      ],
+      "dependencies": [
+        "step_003"
+      ],
+      "handler": "primitive",
+      "primitiveType": "pick",
+      "primitiveParams": {
+        "part_id": "6708_bearing_v1"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_threshold",
+        "threshold": 0.5,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_005": {
+      "id": "step_005",
+      "name": "Assemble 6708_bearing_v1",
+      "partIds": [
+        "6708_bearing_v1",
+        "sun_gear_v1",
+        "ring_gear_v1"
+      ],
+      "dependencies": [
+        "step_004"
+      ],
+      "handler": "policy",
+      "primitiveType": null,
+      "primitiveParams": null,
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_signature",
+        "threshold": null,
+        "model": null,
+        "pattern": "meshing"
+      },
+      "maxRetries": 3
+    },
+    "step_006": {
+      "id": "step_006",
+      "name": "Pick sun_gear_v1",
+      "partIds": [
+        "sun_gear_v1"
+      ],
+      "dependencies": [
+        "step_005"
+      ],
+      "handler": "primitive",
+      "primitiveType": "pick",
+      "primitiveParams": {
+        "part_id": "sun_gear_v1"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_threshold",
+        "threshold": 0.5,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_007": {
+      "id": "step_007",
+      "name": "Assemble sun_gear_v1",
+      "partIds": [
+        "sun_gear_v1",
+        "satelite_gear_v1_4",
+        "satelite_gear_v1_3",
+        "satelite_gear_v1",
+        "satelite_gear_v1_2",
+        "6708_bearing_v1"
+      ],
+      "dependencies": [
+        "step_006"
+      ],
+      "handler": "policy",
+      "primitiveType": null,
+      "primitiveParams": null,
+      "policyId": null,
+      "successCriteria": {
+        "type": "classifier",
+        "threshold": null,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_008": {
+      "id": "step_008",
+      "name": "Pick satellite_base_v1",
+      "partIds": [
+        "satellite_base_v1"
+      ],
+      "dependencies": [
+        "step_007"
+      ],
+      "handler": "primitive",
+      "primitiveType": "pick",
+      "primitiveParams": {
+        "part_id": "satellite_base_v1"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_threshold",
+        "threshold": 0.5,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_009": {
+      "id": "step_009",
+      "name": "Assemble satellite_base_v1",
+      "partIds": [
+        "satellite_base_v1",
+        "satellite_top_v1"
+      ],
+      "dependencies": [
+        "step_008"
+      ],
+      "handler": "primitive",
+      "primitiveType": "place",
+      "primitiveParams": {
+        "part_id": "satellite_base_v1"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "position",
+        "threshold": null,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_010": {
+      "id": "step_010",
+      "name": "Pick satelite_gear_v1_2",
+      "partIds": [
+        "satelite_gear_v1_2"
+      ],
+      "dependencies": [
+        "step_009"
+      ],
+      "handler": "primitive",
+      "primitiveType": "pick",
+      "primitiveParams": {
+        "part_id": "satelite_gear_v1_2"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_threshold",
+        "threshold": 0.5,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_011": {
+      "id": "step_011",
+      "name": "Assemble satelite_gear_v1_2",
+      "partIds": [
+        "satelite_gear_v1_2",
+        "sun_gear_v1",
+        "ring_gear_v1"
+      ],
+      "dependencies": [
+        "step_010"
+      ],
+      "handler": "policy",
+      "primitiveType": null,
+      "primitiveParams": null,
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_signature",
+        "threshold": null,
+        "model": null,
+        "pattern": "meshing"
+      },
+      "maxRetries": 3
+    },
+    "step_012": {
+      "id": "step_012",
+      "name": "Pick satelite_gear_v1_3",
+      "partIds": [
+        "satelite_gear_v1_3"
+      ],
+      "dependencies": [
+        "step_011"
+      ],
+      "handler": "primitive",
+      "primitiveType": "pick",
+      "primitiveParams": {
+        "part_id": "satelite_gear_v1_3"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_threshold",
+        "threshold": 0.5,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_013": {
+      "id": "step_013",
+      "name": "Assemble satelite_gear_v1_3",
+      "partIds": [
+        "satelite_gear_v1_3",
+        "sun_gear_v1",
+        "ring_gear_v1"
+      ],
+      "dependencies": [
+        "step_012"
+      ],
+      "handler": "policy",
+      "primitiveType": null,
+      "primitiveParams": null,
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_signature",
+        "threshold": null,
+        "model": null,
+        "pattern": "meshing"
+      },
+      "maxRetries": 3
+    },
+    "step_014": {
+      "id": "step_014",
+      "name": "Pick satelite_gear_v1_4",
+      "partIds": [
+        "satelite_gear_v1_4"
+      ],
+      "dependencies": [
+        "step_013"
+      ],
+      "handler": "primitive",
+      "primitiveType": "pick",
+      "primitiveParams": {
+        "part_id": "satelite_gear_v1_4"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_threshold",
+        "threshold": 0.5,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_015": {
+      "id": "step_015",
+      "name": "Assemble satelite_gear_v1_4",
+      "partIds": [
+        "satelite_gear_v1_4",
+        "sun_gear_v1",
+        "ring_gear_v1"
+      ],
+      "dependencies": [
+        "step_014"
+      ],
+      "handler": "policy",
+      "primitiveType": null,
+      "primitiveParams": null,
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_signature",
+        "threshold": null,
+        "model": null,
+        "pattern": "meshing"
+      },
+      "maxRetries": 3
+    },
+    "step_016": {
+      "id": "step_016",
+      "name": "Pick satelite_gear_v1",
+      "partIds": [
+        "satelite_gear_v1"
+      ],
+      "dependencies": [
+        "step_015"
+      ],
+      "handler": "primitive",
+      "primitiveType": "pick",
+      "primitiveParams": {
+        "part_id": "satelite_gear_v1"
+      },
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_threshold",
+        "threshold": 0.5,
+        "model": null,
+        "pattern": null
+      },
+      "maxRetries": 3
+    },
+    "step_017": {
+      "id": "step_017",
+      "name": "Assemble satelite_gear_v1",
+      "partIds": [
+        "satelite_gear_v1",
+        "sun_gear_v1",
+        "ring_gear_v1"
+      ],
+      "dependencies": [
+        "step_016"
+      ],
+      "handler": "policy",
+      "primitiveType": null,
+      "primitiveParams": null,
+      "policyId": null,
+      "successCriteria": {
+        "type": "force_signature",
+        "threshold": null,
+        "model": null,
+        "pattern": "meshing"
+      },
+      "maxRetries": 3
+    }
+  },
+  "stepOrder": [
+    "step_001",
+    "step_002",
+    "step_003",
+    "step_004",
+    "step_005",
+    "step_006",
+    "step_007",
+    "step_008",
+    "step_009",
+    "step_010",
+    "step_011",
+    "step_012",
+    "step_013",
+    "step_014",
+    "step_015",
+    "step_016",
+    "step_017"
+  ]
+}
