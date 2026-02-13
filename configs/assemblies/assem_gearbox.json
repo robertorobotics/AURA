@@ -1,11 +1,11 @@
 {
-  "id": "tmpvkxaqrum",
+  "id": "assem_gearbox",
   "name": "Assem_gearbox",
   "parts": {
     "sts3215_original_v1": {
       "id": "sts3215_original_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/sts3215_original_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/sts3215_original_v1.glb",
       "graspPoints": [],
       "position": [
         -38.556396,
@@ -28,7 +28,7 @@
     "6708_bearing_v1": {
       "id": "6708_bearing_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/6708_bearing_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/6708_bearing_v1.glb",
       "graspPoints": [],
       "position": [
         -26.256396,
@@ -51,7 +51,7 @@
     "sts3215_servo_horn_v1": {
       "id": "sts3215_servo_horn_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/sts3215_servo_horn_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/sts3215_servo_horn_v1.glb",
       "graspPoints": [],
       "position": [
         -26.256396,
@@ -74,7 +74,7 @@
     "bearing6704_v1": {
       "id": "bearing6704_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/bearing6704_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/bearing6704_v1.glb",
       "graspPoints": [],
       "position": [
         -26.256396,
@@ -97,7 +97,7 @@
     "generic_base_sts3215_v2": {
       "id": "generic_base_sts3215_v2",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/generic_base_sts3215_v2.glb",
+      "meshFile": "/meshes/assem_gearbox/generic_base_sts3215_v2.glb",
       "graspPoints": [],
       "position": [
         -1.256396,
@@ -120,7 +120,7 @@
     "satelite_gear_v1": {
       "id": "satelite_gear_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/satelite_gear_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/satelite_gear_v1.glb",
       "graspPoints": [],
       "position": [
         -18.959662,
@@ -143,7 +143,7 @@
     "satelite_gear_v1_2": {
       "id": "satelite_gear_v1_2",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/satelite_gear_v1_2.glb",
+      "meshFile": "/meshes/assem_gearbox/satelite_gear_v1_2.glb",
       "graspPoints": [],
       "position": [
         -49.648255,
@@ -166,7 +166,7 @@
     "satelite_gear_v1_3": {
       "id": "satelite_gear_v1_3",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/satelite_gear_v1_3.glb",
+      "meshFile": "/meshes/assem_gearbox/satelite_gear_v1_3.glb",
       "graspPoints": [],
       "position": [
         -58.360303,
@@ -189,7 +189,7 @@
     "satelite_gear_v1_4": {
       "id": "satelite_gear_v1_4",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/satelite_gear_v1_4.glb",
+      "meshFile": "/meshes/assem_gearbox/satelite_gear_v1_4.glb",
       "graspPoints": [],
       "position": [
         -8.144698,
@@ -212,7 +212,7 @@
     "satellite_top_v3": {
       "id": "satellite_top_v3",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/satellite_top_v3.glb",
+      "meshFile": "/meshes/assem_gearbox/satellite_top_v3.glb",
       "graspPoints": [],
       "position": [
         -51.256396,
@@ -235,7 +235,7 @@
     "satellite_base_v1": {
       "id": "satellite_base_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/satellite_base_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/satellite_base_v1.glb",
       "graspPoints": [],
       "position": [
         -26.888057,
@@ -258,7 +258,7 @@
     "sun_gear_v1": {
       "id": "sun_gear_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/sun_gear_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/sun_gear_v1.glb",
       "graspPoints": [],
       "position": [
         0.0,
@@ -279,7 +279,7 @@
     "ring_gear_v1": {
       "id": "ring_gear_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/ring_gear_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/ring_gear_v1.glb",
       "graspPoints": [],
       "position": [
         -1.256396,
@@ -302,7 +302,7 @@
     "spacer_5xm3x15_v1": {
       "id": "spacer_5xm3x15_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/spacer_5xm3x15_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/spacer_5xm3x15_v1.glb",
       "graspPoints": [],
       "position": [
         -45.701833,
@@ -324,7 +324,7 @@
     "spacer_5xm3x15_v1_2": {
       "id": "spacer_5xm3x15_v1_2",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/spacer_5xm3x15_v1_2.glb",
+      "meshFile": "/meshes/assem_gearbox/spacer_5xm3x15_v1_2.glb",
       "graspPoints": [],
       "position": [
         -6.810959,
@@ -346,7 +346,7 @@
     "spacer_5xm3x15_v1_3": {
       "id": "spacer_5xm3x15_v1_3",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/spacer_5xm3x15_v1_3.glb",
+      "meshFile": "/meshes/assem_gearbox/spacer_5xm3x15_v1_3.glb",
       "graspPoints": [],
       "position": [
         -6.810959,
@@ -368,7 +368,7 @@
     "spacer_5xm3x15_v1_4": {
       "id": "spacer_5xm3x15_v1_4",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/spacer_5xm3x15_v1_4.glb",
+      "meshFile": "/meshes/assem_gearbox/spacer_5xm3x15_v1_4.glb",
       "graspPoints": [],
       "position": [
         -45.701833,
@@ -390,7 +390,7 @@
     "mr63zz_bearing_v1": {
       "id": "mr63zz_bearing_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/mr63zz_bearing_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/mr63zz_bearing_v1.glb",
       "graspPoints": [],
       "position": [
         -7.897997,
@@ -413,7 +413,7 @@
     "mr63zz_bearing_v1_2": {
       "id": "mr63zz_bearing_v1_2",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/mr63zz_bearing_v1_2.glb",
+      "meshFile": "/meshes/assem_gearbox/mr63zz_bearing_v1_2.glb",
       "graspPoints": [],
       "position": [
         -21.6746,
@@ -436,7 +436,7 @@
     "mr63zz_bearing_v1_3": {
       "id": "mr63zz_bearing_v1_3",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/mr63zz_bearing_v1_3.glb",
+      "meshFile": "/meshes/assem_gearbox/mr63zz_bearing_v1_3.glb",
       "graspPoints": [],
       "position": [
         1.843533,
@@ -459,7 +459,7 @@
     "mr63zz_bearing_v1_4": {
       "id": "mr63zz_bearing_v1_4",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/mr63zz_bearing_v1_4.glb",
+      "meshFile": "/meshes/assem_gearbox/mr63zz_bearing_v1_4.glb",
       "graspPoints": [],
       "position": [
         1.843533,
@@ -482,7 +482,7 @@
     "mr63zz_bearing_v1_5": {
       "id": "mr63zz_bearing_v1_5",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/mr63zz_bearing_v1_5.glb",
+      "meshFile": "/meshes/assem_gearbox/mr63zz_bearing_v1_5.glb",
       "graspPoints": [],
       "position": [
         -31.41613,
@@ -505,7 +505,7 @@
     "mr63zz_bearing_v1_6": {
       "id": "mr63zz_bearing_v1_6",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/mr63zz_bearing_v1_6.glb",
+      "meshFile": "/meshes/assem_gearbox/mr63zz_bearing_v1_6.glb",
       "graspPoints": [],
       "position": [
         -31.41613,
@@ -528,7 +528,7 @@
     "mr63zz_bearing_v1_7": {
       "id": "mr63zz_bearing_v1_7",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/mr63zz_bearing_v1_7.glb",
+      "meshFile": "/meshes/assem_gearbox/mr63zz_bearing_v1_7.glb",
       "graspPoints": [],
       "position": [
         -7.897997,
@@ -551,7 +551,7 @@
     "mr63zz_bearing_v1_8": {
       "id": "mr63zz_bearing_v1_8",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/mr63zz_bearing_v1_8.glb",
+      "meshFile": "/meshes/assem_gearbox/mr63zz_bearing_v1_8.glb",
       "graspPoints": [],
       "position": [
         -21.6746,
@@ -574,7 +574,7 @@
     "1mm_spacer_v1": {
       "id": "1mm_spacer_v1",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/1mm_spacer_v1.glb",
+      "meshFile": "/meshes/assem_gearbox/1mm_spacer_v1.glb",
       "graspPoints": [],
       "position": [
         1.843533,
@@ -597,7 +597,7 @@
     "1mm_spacer_v1_2": {
       "id": "1mm_spacer_v1_2",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/1mm_spacer_v1_2.glb",
+      "meshFile": "/meshes/assem_gearbox/1mm_spacer_v1_2.glb",
       "graspPoints": [],
       "position": [
         -21.6746,
@@ -620,7 +620,7 @@
     "1mm_spacer_v1_3": {
       "id": "1mm_spacer_v1_3",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/1mm_spacer_v1_3.glb",
+      "meshFile": "/meshes/assem_gearbox/1mm_spacer_v1_3.glb",
       "graspPoints": [],
       "position": [
         -31.41613,
@@ -643,7 +643,7 @@
     "1mm_spacer_v1_4": {
       "id": "1mm_spacer_v1_4",
       "cadFile": null,
-      "meshFile": "/meshes/tmpvkxaqrum/1mm_spacer_v1_4.glb",
+      "meshFile": "/meshes/assem_gearbox/1mm_spacer_v1_4.glb",
       "graspPoints": [],
       "position": [
         -7.897997,
@@ -714,8 +714,8 @@
       "name": "Assemble generic_base_sts3215_v2",
       "partIds": [
         "generic_base_sts3215_v2",
-        "6708_bearing_v1",
-        "satelite_gear_v1"
+        "satelite_gear_v1",
+        "6708_bearing_v1"
       ],
       "dependencies": [
         "step_002"
@@ -763,9 +763,9 @@
       "partIds": [
         "sts3215_original_v1",
         "ring_gear_v1",
-        "6708_bearing_v1",
+        "bearing6704_v1",
         "sts3215_servo_horn_v1",
-        "bearing6704_v1"
+        "6708_bearing_v1"
       ],
       "dependencies": [
         "step_004"
@@ -859,9 +859,9 @@
       "name": "Assemble 6708_bearing_v1",
       "partIds": [
         "6708_bearing_v1",
-        "ring_gear_v1",
         "generic_base_sts3215_v2",
-        "sts3215_original_v1"
+        "sts3215_original_v1",
+        "ring_gear_v1"
       ],
       "dependencies": [
         "step_008"
@@ -1002,8 +1002,8 @@
       "partIds": [
         "bearing6704_v1",
         "ring_gear_v1",
-        "sts3215_servo_horn_v1",
-        "sts3215_original_v1"
+        "sts3215_original_v1",
+        "sts3215_servo_horn_v1"
       ],
       "dependencies": [
         "step_014"
@@ -1235,9 +1235,9 @@
       "name": "Assemble sts3215_servo_horn_v1",
       "partIds": [
         "sts3215_servo_horn_v1",
-        "ring_gear_v1",
         "bearing6704_v1",
-        "sts3215_original_v1"
+        "sts3215_original_v1",
+        "ring_gear_v1"
       ],
       "dependencies": [
         "step_024"
@@ -1480,17 +1480,17 @@
       "name": "Assemble mr63zz_bearing_v1_2",
       "partIds": [
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
-        "mr63zz_bearing_v1",
-        "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_5",
-        "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_7",
+        "1mm_spacer_v1_2",
         "mr63zz_bearing_v1_8",
-        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_3",
+        "1mm_spacer_v1_3",
+        "mr63zz_bearing_v1_5",
+        "mr63zz_bearing_v1",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
+        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_034"
@@ -1537,17 +1537,17 @@
       "name": "Assemble mr63zz_bearing_v1_3",
       "partIds": [
         "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
-        "mr63zz_bearing_v1_5",
-        "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_7",
+        "1mm_spacer_v1_2",
         "mr63zz_bearing_v1_8",
-        "1mm_spacer_v1_4",
+        "1mm_spacer_v1_3",
+        "mr63zz_bearing_v1_5",
+        "mr63zz_bearing_v1",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
+        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_036"
@@ -1594,17 +1594,17 @@
       "name": "Assemble mr63zz_bearing_v1_4",
       "partIds": [
         "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
-        "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_5",
-        "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_7",
+        "1mm_spacer_v1_2",
         "mr63zz_bearing_v1_8",
-        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_3",
+        "1mm_spacer_v1_3",
+        "mr63zz_bearing_v1_5",
+        "mr63zz_bearing_v1",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "1mm_spacer_v1",
+        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_038"
@@ -1651,17 +1651,17 @@
       "name": "Assemble mr63zz_bearing_v1_5",
       "partIds": [
         "mr63zz_bearing_v1_5",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
+        "1mm_spacer_v1_2",
+        "mr63zz_bearing_v1_8",
         "mr63zz_bearing_v1_3",
         "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_7",
-        "mr63zz_bearing_v1_8",
-        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
+        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_040"
@@ -1708,17 +1708,17 @@
       "name": "Assemble mr63zz_bearing_v1_6",
       "partIds": [
         "mr63zz_bearing_v1_6",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
-        "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_5",
-        "1mm_spacer_v1_3",
-        "1mm_spacer_v1_4",
+        "1mm_spacer_v1_2",
         "mr63zz_bearing_v1_8",
-        "mr63zz_bearing_v1_7",
-        "1mm_spacer_v1_2"
+        "mr63zz_bearing_v1_3",
+        "1mm_spacer_v1_3",
+        "mr63zz_bearing_v1_5",
+        "mr63zz_bearing_v1",
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
+        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_042"
@@ -1765,17 +1765,17 @@
       "name": "Assemble mr63zz_bearing_v1_7",
       "partIds": [
         "mr63zz_bearing_v1_7",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
-        "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_5",
-        "1mm_spacer_v1_3",
-        "1mm_spacer_v1_4",
+        "1mm_spacer_v1_2",
         "mr63zz_bearing_v1_8",
+        "mr63zz_bearing_v1_3",
+        "1mm_spacer_v1_3",
+        "mr63zz_bearing_v1_5",
+        "mr63zz_bearing_v1",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
+        "1mm_spacer_v1_4"
       ],
       "dependencies": [
         "step_044"
@@ -1822,17 +1822,17 @@
       "name": "Assemble mr63zz_bearing_v1_8",
       "partIds": [
         "mr63zz_bearing_v1_8",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
+        "1mm_spacer_v1_2",
         "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_5",
         "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_7",
-        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_5",
+        "mr63zz_bearing_v1",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
+        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_046"
@@ -1879,17 +1879,17 @@
       "name": "Assemble mr63zz_bearing_v1",
       "partIds": [
         "mr63zz_bearing_v1",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_5",
-        "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_7",
+        "1mm_spacer_v1_2",
         "mr63zz_bearing_v1_8",
-        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_3",
+        "1mm_spacer_v1_3",
+        "mr63zz_bearing_v1_5",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
+        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_048"
@@ -1936,17 +1936,17 @@
       "name": "Assemble 1mm_spacer_v1_2",
       "partIds": [
         "1mm_spacer_v1_2",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
-        "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_5",
-        "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_7",
         "mr63zz_bearing_v1_8",
+        "mr63zz_bearing_v1_3",
+        "1mm_spacer_v1_3",
+        "mr63zz_bearing_v1_5",
+        "mr63zz_bearing_v1",
+        "mr63zz_bearing_v1_6",
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
         "1mm_spacer_v1_4",
-        "mr63zz_bearing_v1_6"
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_050"
@@ -1993,17 +1993,17 @@
       "name": "Assemble 1mm_spacer_v1_3",
       "partIds": [
         "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
+        "1mm_spacer_v1_2",
+        "mr63zz_bearing_v1_8",
         "mr63zz_bearing_v1_3",
         "mr63zz_bearing_v1_5",
-        "mr63zz_bearing_v1_7",
-        "mr63zz_bearing_v1_8",
-        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
+        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_052"
@@ -2050,17 +2050,17 @@
       "name": "Assemble 1mm_spacer_v1_4",
       "partIds": [
         "1mm_spacer_v1_4",
-        "mr63zz_bearing_v1_4",
-        "1mm_spacer_v1",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
-        "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_5",
-        "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_7",
+        "1mm_spacer_v1_2",
         "mr63zz_bearing_v1_8",
+        "mr63zz_bearing_v1_3",
+        "1mm_spacer_v1_3",
+        "mr63zz_bearing_v1_5",
+        "mr63zz_bearing_v1",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "1mm_spacer_v1",
+        "mr63zz_bearing_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_054"
@@ -2107,17 +2107,17 @@
       "name": "Assemble 1mm_spacer_v1",
       "partIds": [
         "1mm_spacer_v1",
-        "mr63zz_bearing_v1_4",
         "mr63zz_bearing_v1_2",
-        "mr63zz_bearing_v1",
-        "mr63zz_bearing_v1_3",
-        "mr63zz_bearing_v1_5",
-        "1mm_spacer_v1_3",
-        "mr63zz_bearing_v1_7",
+        "1mm_spacer_v1_2",
         "mr63zz_bearing_v1_8",
-        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_3",
+        "1mm_spacer_v1_3",
+        "mr63zz_bearing_v1_5",
+        "mr63zz_bearing_v1",
         "mr63zz_bearing_v1_6",
-        "1mm_spacer_v1_2"
+        "mr63zz_bearing_v1_4",
+        "1mm_spacer_v1_4",
+        "mr63zz_bearing_v1_7"
       ],
       "dependencies": [
         "step_056"

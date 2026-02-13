@@ -136,17 +136,18 @@ async def upload_step_file(file: UploadFile = File(...)) -> dict[str, Any]:  # n
     if suffix not in {".step", ".stp"}:
         raise HTTPException(status_code=400, detail=f"Expected .step/.stp file, got '{suffix}'")
 
-    # Save upload to temp file
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-        tmp_path = Path(tmp.name)
-        shutil.copyfileobj(file.file, tmp)
+    # Save upload to temp dir, preserving original filename so the parser
+    # derives the correct assembly_id from the file stem.
+    tmp_dir = Path(tempfile.mkdtemp())
+    tmp_path = tmp_dir / filename
+    with open(tmp_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
 
     try:
         parser = CADParser()
-        assembly_id = Path(filename).stem.lower().replace(" ", "_").replace("-", "_")
-        mesh_dir = MESHES_DIR / assembly_id
+        mesh_dir = MESHES_DIR / tmp_path.stem.lower().replace(" ", "_").replace("-", "_")
 
-        parse_result = parser.parse(tmp_path, mesh_dir, assembly_name=Path(filename).stem)
+        parse_result = parser.parse(tmp_path, mesh_dir, assembly_name=tmp_path.stem)
 
         planner = SequencePlanner()
         graph = planner.plan(parse_result)
@@ -171,4 +172,4 @@ async def upload_step_file(file: UploadFile = File(...)) -> dict[str, Any]:  # n
         logger.error("STEP upload failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal parsing error") from e
     finally:
-        tmp_path.unlink(missing_ok=True)
+        shutil.rmtree(tmp_dir, ignore_errors=True)
