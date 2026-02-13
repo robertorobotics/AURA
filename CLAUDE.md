@@ -45,9 +45,13 @@ nextis/
 ├── execution/
 │   ├── types.py                 # StepResult dataclass
 │   ├── sequencer.py             # State machine: walks graph, retries, escalates
-│   └── policy_router.py         # Dispatch to primitive or policy (policy STUBBED)
+│   └── policy_router.py         # Dispatch to primitive, policy, or rl_finetune
 ├── learning/
-│   └── recorder.py              # Step-segmented 50Hz HDF5 recording
+│   ├── recorder.py              # Step-segmented 50Hz HDF5 recording
+│   ├── replay_buffer.py         # Circular buffer with intervention tagging (RLPD)
+│   ├── sac.py                   # Minimal SAC from scratch, BC initialization
+│   ├── reward.py                # StepVerifier-based dense + sparse rewards
+│   └── rl_trainer.py            # Per-step HIL-SERL fine-tuning loop
 ├── analytics/
 │   └── store.py                 # JSON file-backed per-step metrics
 ├── perception/                  # EMPTY — no files yet
@@ -60,6 +64,7 @@ nextis/
         ├── teleop.py            # Start/stop teleop (mock mode only)
         ├── recording.py         # Step demo recording to HDF5
         ├── training.py          # STUBBED — in-memory job registry only
+        ├── rl_training.py       # RL fine-tuning session management
         └── analytics.py         # Per-step metrics query
 ```
 
@@ -78,8 +83,12 @@ docs/              # frontend.md, extraction-guide.md
 ```
 hardware/ → control/ → execution/
 assembly/ ──────────→ api/ → frontend/
-learning/recorder  ← api/routes/recording
-analytics/store    ← api/routes/{analytics, execution}
+learning/recorder    ← api/routes/recording
+learning/rl_trainer  → learning/sac, learning/replay_buffer, learning/reward
+learning/reward      → perception/verifier, perception/checks
+execution/policy_router → learning/policy_loader (BC + RL checkpoints)
+api/routes/rl_training  → learning/rl_trainer
+analytics/store      ← api/routes/{analytics, execution}
 ```
 
 No layer reaches down more than one level. `execution/` uses `control/` but never `hardware/` directly. `control/` uses `hardware/`. `learning/` hooks into `control/` for recording.
@@ -106,8 +115,12 @@ No layer reaches down more than one level. `execution/` uses `control/` but neve
 | `assembly/mesh_utils` | COMPLETE | Tessellation, bounding box, color assignment |
 | `assembly/sequence_planner` | COMPLETE | Heuristic ordering (size-based, pick-place-insert) |
 | `execution/sequencer` | COMPLETE | State machine with retry, pause/resume, human escalation |
-| `execution/policy_router` | **STUBBED** | Primitive dispatch works; policy always fails |
+| `execution/policy_router` | COMPLETE | Dispatches primitive, policy, and rl_finetune handlers |
 | `learning/recorder` | COMPLETE | 50Hz threaded capture → HDF5 |
+| `learning/replay_buffer` | COMPLETE | Circular buffer with intervention tagging, RLPD sampling |
+| `learning/sac` | COMPLETE | Minimal SAC from scratch, BC initialization |
+| `learning/reward` | COMPLETE | StepVerifier-based dense + sparse rewards |
+| `learning/rl_trainer` | COMPLETE | Per-step HIL-SERL fine-tuning loop |
 | `analytics/store` | COMPLETE | JSON file store, per-step aggregated metrics |
 | `perception/` | **EMPTY** | Directory exists, no files |
 | `api/routes/assembly` | COMPLETE | CRUD + STEP upload + parse |
@@ -115,6 +128,7 @@ No layer reaches down more than one level. `execution/` uses `control/` but neve
 | `api/routes/teleop` | COMPLETE | Mock mode works; real hardware returns 501 |
 | `api/routes/recording` | COMPLETE | Start/stop/discard + demo listing |
 | `api/routes/training` | **STUBBED** | In-memory job registry, no actual training |
+| `api/routes/rl_training` | COMPLETE | RL session management endpoints |
 | `api/routes/analytics` | COMPLETE | Per-step metrics query |
 
 ---
@@ -165,6 +179,14 @@ All routes are defined in `nextis/api/routes/`. FastAPI app is in `nextis/api/ap
 | GET | `/training/jobs/{job_id}` | Job status |
 | GET | `/training/jobs` | List all jobs |
 
+### RL Training (`/rl`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/rl/step/{step_id}/start` | Start RL fine-tuning for a step |
+| POST | `/rl/step/{step_id}/stop` | Stop fine-tuning, save checkpoint |
+| GET | `/rl/status` | Current RL training state |
+| GET | `/rl/step/{step_id}/policy` | Check if RL checkpoint exists |
+
 ### Other
 | Method | Path | Description |
 |--------|------|-------------|
@@ -185,7 +207,7 @@ class AssemblyStep(BaseModel):
     name: str                        # e.g. "Insert bearing into housing"
     part_ids: list[str]              # Parts involved
     dependencies: list[str]          # Step IDs that must complete first
-    handler: str                     # "primitive" or "policy"
+    handler: str                     # "primitive", "policy", or "rl_finetune"
     primitive_type: str | None       # "pick", "place", "press_fit", etc.
     primitive_params: dict | None    # target_pose, force_threshold, etc.
     policy_id: str | None            # Trained policy checkpoint path
@@ -255,6 +277,7 @@ configs/arms/                           # Arm YAML configs (empty, .gitkeep)
 configs/calibration/                    # Calibration profiles (empty, .gitkeep)
 data/meshes/{assembly_id}/              # GLB files from STEP upload
 data/demos/{assembly_id}/{step_id}/     # HDF5 demo recordings
+data/policies/{assembly_id}/{step_id}/   # BC (policy.pt) + RL (policy_rl.pt) checkpoints
 data/analytics/{assembly_id}.json       # Per-step run metrics
 ```
 
@@ -298,11 +321,12 @@ CAD: `cadquery-ocp-novtk` via pip (not conda — conda solver is too slow).
 
 - **Real hardware integration** — primitives are stubs, teleop is mock-only
 - **LeRobot submodule** — imports are try/except guarded, no submodule added
-- **Policy training** — training routes return stubs, no LeRobot pipeline
-- **Policy inference** — policy_router always fails, triggers human intervention
 - **Perception module** — empty directory, no step completion classifiers
 - **Calibration system** — config dirs exist but no calibration files or scripts
 - **Grasp planning** — no automatic grasp pose computation from CAD geometry
+- **Image-based RL observations** — current RL uses joint-space only, no camera input
+- **Multi-step RL** — each step is trained independently, no cross-step credit assignment
+- **Distributed training** — actor and learner run in the same process
 
 ### What NOT to Build (unless explicitly asked)
 - Simulation environments (MuJoCo, PyBullet, Isaac)
