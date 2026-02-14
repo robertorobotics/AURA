@@ -119,6 +119,33 @@ async def update_step(
     return {"status": "updated"}
 
 
+@router.patch("/{assembly_id}")
+async def update_assembly(
+    assembly_id: str,
+    updates: dict[str, Any],
+) -> dict[str, str]:
+    """Update assembly-level metadata (currently: name only).
+
+    Args:
+        assembly_id: The assembly to update.
+        updates: Dict with fields to update. Supports ``name``.
+    """
+    graph = _load_assembly(assembly_id)
+
+    name = updates.get("name")
+    if name is not None:
+        if not isinstance(name, str) or not name.strip():
+            raise HTTPException(status_code=422, detail="Name must be a non-empty string")
+        if len(name) > 100:
+            raise HTTPException(status_code=422, detail="Name must be 100 characters or fewer")
+        graph.name = name.strip()
+
+    path = CONFIGS_DIR / f"{assembly_id}.json"
+    graph.to_json_file(path)
+    logger.info("Updated assembly metadata for %s", assembly_id)
+    return {"status": "updated"}
+
+
 @router.delete("/{assembly_id}")
 async def delete_assembly(assembly_id: str) -> dict[str, str]:
     """Delete an assembly and its associated mesh files."""

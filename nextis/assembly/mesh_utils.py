@@ -279,6 +279,15 @@ def tessellate_to_glb(
                 centroid[2],
             )
 
+        bbox_min = verts.min(axis=0)
+        bbox_max = verts.max(axis=0)
+        logger.debug(
+            "Post-center bbox for %s: min=[%.3f, %.3f, %.3f] max=[%.3f, %.3f, %.3f]",
+            output_path.name,
+            *bbox_min,
+            *bbox_max,
+        )
+
         mesh = trimesh.Trimesh(vertices=verts, faces=faces)
         mesh.export(str(output_path), file_type="glb")
         logger.debug(

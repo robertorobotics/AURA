@@ -404,7 +404,9 @@ class CADParser:
             center = [0.0, 0.0, 0.0]
             extents = [0.05, 0.05, 0.05]
 
-        # Prefer transform position; fall back to bbox center
+        # Part.position is in assembly-space coordinates (pre-recentering).
+        # The GLB mesh is centered at local origin by mesh_utils.tessellate_to_glb(),
+        # so Part.position is the sole placement — no offset baked into the mesh.
         pos = rp.position if any(abs(v) > 1e-9 for v in rp.position) else center
 
         geo_type, dims = classify_geometry(extents[0], extents[1], extents[2])

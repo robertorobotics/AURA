@@ -6,7 +6,9 @@ homing) import ``get_registry()`` from here.
 
 from __future__ import annotations
 
+import contextlib
 import logging
+import threading
 
 from fastapi import APIRouter, HTTPException
 
@@ -94,3 +96,28 @@ async def disconnect_arm(request: ConnectRequest) -> dict[str, str]:
         raise HTTPException(status_code=400, detail=result.get("error", "Disconnect failed"))
     logger.info("Arm disconnected via API: %s", request.arm_id)
     return {"status": "disconnected", "armId": request.arm_id}
+
+
+@router.post("/estop")
+async def emergency_stop() -> dict[str, str]:
+    """Trigger emergency stop — cut power to all motors.
+
+    Never raises — catches all exceptions and returns success.
+    An E-STOP that errors is worse than one that silently succeeds.
+    """
+    logger.critical("!!! E-STOP triggered via API !!!")
+    try:
+        from nextis.api.routes.teleop import get_teleop_loop
+
+        loop = get_teleop_loop()
+        if loop and loop.robot:
+            from nextis.control.safety import SafetyLayer
+
+            safety = SafetyLayer(robot_lock=threading.Lock())
+            with contextlib.suppress(Exception):
+                safety.emergency_stop(loop.robot)
+        else:
+            logger.info("E-STOP: no active robot — mock/idle mode, nothing to disconnect")
+    except Exception as exc:
+        logger.error("E-STOP handler error (non-fatal): %s", exc)
+    return {"status": "stopped"}
