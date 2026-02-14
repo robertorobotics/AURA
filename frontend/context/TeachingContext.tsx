@@ -11,8 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import useSWR, { useSWRConfig } from "swr";
-import type { TeleopState } from "@/lib/types";
 import { api } from "@/lib/api";
+import { useTeleopState, TELEOP_SWR_KEY } from "@/lib/hooks";
 import { recordingEvents } from "@/lib/recording-events";
 import { useAssembly } from "./AssemblyContext";
 import { useExecution } from "./ExecutionContext";
@@ -32,19 +32,13 @@ interface TeachingContextValue {
 
 const TeachingContext = createContext<TeachingContextValue | null>(null);
 
-const TELEOP_SWR_KEY = "/teleop/state";
-
 export function TeachingProvider({ children }: { children: ReactNode }) {
   const { assembly } = useAssembly();
   const { executionState } = useExecution();
   const { mutate } = useSWRConfig();
 
-  // --- Teleop state (SWR polling) ---
-  const { data: teleop } = useSWR<TeleopState>(
-    TELEOP_SWR_KEY,
-    api.getTeleopState,
-    { refreshInterval: 2000 },
-  );
+  // --- Teleop state (shared SWR hook) ---
+  const { data: teleop } = useTeleopState();
   const teleopActive = teleop?.active ?? false;
 
   // --- Recording state (event bus) ---

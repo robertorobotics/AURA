@@ -51,7 +51,7 @@ export function StepList() {
         </div>
         <button
           onClick={openUpload}
-          className="text-[11px] font-medium text-text-tertiary transition-colors hover:text-text-primary"
+          className="text-[11px] font-medium text-text-secondary transition-colors hover:text-text-primary"
           title="Upload STEP file"
         >
           + Upload

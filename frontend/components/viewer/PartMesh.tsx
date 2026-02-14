@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Edges, useGLTF } from "@react-three/drei";
-import type { Group, Material, MeshStandardMaterial } from "three";
+import { Clone, Edges, useGLTF } from "@react-three/drei";
+import type { Group, MeshStandardMaterial } from "three";
 import { Mesh } from "three";
 import type { Part } from "@/lib/types";
 import type { PartRenderState } from "@/lib/animation";
@@ -23,27 +23,11 @@ function GlbMesh({ url }: { url: string }) {
   const fullUrl = url.startsWith("http") ? url : `${API_BASE}${url}`;
   const { scene } = useGLTF(fullUrl);
 
-  // Clone scene with independent materials and scale mm→m.
-  // OCC tessellation outputs vertices in millimeters; the Three.js scene uses
-  // meters (matching assembly JSON positions). Scale by 0.001 to reconcile.
-  // Centering is done once in the backend (mesh_utils.tessellate_to_glb),
-  // so Part.position is the sole placement — no re-centering needed here.
-  const cloned = useMemo(() => {
-    const c = scene.clone();
-    c.traverse((child) => {
-      if ((child as Mesh).isMesh) {
-        const m = child as Mesh;
-        m.material = (m.material as Material).clone();
-      }
-    });
-
-    // OCC tessellation produces mm-scale vertices; Three.js scene uses meters
-    c.scale.setScalar(0.001);
-
-    return c;
-  }, [scene]);
-
-  return <primitive object={cloned} />;
+  // <Clone> deep-clones geometry + materials (via SkeletonUtils.clone),
+  // preventing React reconciliation from disposing shared WebGL buffers
+  // in the useGLTF cache — which caused permanent model disappearance.
+  // Scale 0.001: OCC tessellation outputs mm, Three.js scene uses metres.
+  return <Clone object={scene} scale={0.001} castShadow receiveShadow />;
 }
 
 // ---------------------------------------------------------------------------

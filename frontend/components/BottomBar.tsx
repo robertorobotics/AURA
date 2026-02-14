@@ -19,7 +19,7 @@ function HardwareIndicator() {
   const { data: hw } = useSWR<HardwareStatus>(
     "/hardware/status",
     api.getHardwareStatus,
-    { refreshInterval: 5000 },
+    { refreshInterval: 10000 },
   );
 
   if (!hw || hw.totalArms === 0) return null;

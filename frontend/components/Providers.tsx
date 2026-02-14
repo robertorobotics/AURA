@@ -9,7 +9,7 @@ import { TeachingProvider } from "@/context/TeachingContext";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <SWRConfig value={{ revalidateOnFocus: false, shouldRetryOnError: false }}>
+    <SWRConfig value={{ revalidateOnFocus: false, shouldRetryOnError: false, dedupingInterval: 5000 }}>
       <WebSocketProvider>
         <AssemblyProvider>
           <ExecutionProvider>

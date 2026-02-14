@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import useSWR from "swr";
+import type { TeleopState } from "@/lib/types";
 import { api } from "@/lib/api";
 
 type KeyHandler = (e: KeyboardEvent) => void;
@@ -26,9 +27,17 @@ export function useKeyboardShortcuts(handlers: Record<string, KeyHandler>) {
   }, [handlers]);
 }
 
+export const TELEOP_SWR_KEY = "/teleop/state";
+
+export function useTeleopState() {
+  return useSWR<TeleopState>(TELEOP_SWR_KEY, api.getTeleopState, {
+    refreshInterval: 5000,
+  });
+}
+
 export function useConnectionStatus(): { isConnected: boolean } {
   const { data, error } = useSWR("/health", api.fetchHealth, {
-    refreshInterval: 5000,
+    refreshInterval: 30000,
   });
   return { isConnected: !error && data !== undefined };
 }

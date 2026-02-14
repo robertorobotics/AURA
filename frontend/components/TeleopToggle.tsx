@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import useSWR, { mutate } from "swr";
+import { mutate } from "swr";
 import type { TeleopState } from "@/lib/types";
 import { api } from "@/lib/api";
-
-const SWR_KEY = "/teleop/state";
+import { useTeleopState, TELEOP_SWR_KEY } from "@/lib/hooks";
 
 export function TeleopToggle() {
-  const { data: teleop } = useSWR<TeleopState>(SWR_KEY, api.getTeleopState, {
-    refreshInterval: 3000,
-  });
+  const { data: teleop } = useTeleopState();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +24,7 @@ export function TeleopToggle() {
       : { active: true, arms: [] };
 
     // Optimistic update
-    await mutate(SWR_KEY, next, { revalidate: false });
+    await mutate(TELEOP_SWR_KEY, next, { revalidate: false });
 
     try {
       if (active) {
@@ -36,10 +33,10 @@ export function TeleopToggle() {
         await api.startTeleop([]);
       }
       // Revalidate to get real arm names from server
-      await mutate(SWR_KEY);
+      await mutate(TELEOP_SWR_KEY);
     } catch {
       // Revert optimistic update
-      await mutate(SWR_KEY);
+      await mutate(TELEOP_SWR_KEY);
       setError(active ? "Stop failed" : "Start failed");
       setTimeout(() => setError(null), 3000);
     } finally {
