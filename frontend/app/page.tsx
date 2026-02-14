@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
+import useSWR, { mutate } from "swr";
 import { TopBar } from "@/components/TopBar";
 import { BottomBar } from "@/components/BottomBar";
 import { StepList } from "@/components/StepList";
@@ -11,7 +12,10 @@ import { TeachingOverlay } from "@/components/TeachingOverlay";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useAssembly } from "@/context/AssemblyContext";
 import { useExecution } from "@/context/ExecutionContext";
+import { useTeaching } from "@/context/TeachingContext";
 import { useKeyboardShortcuts } from "@/lib/hooks";
+import { api } from "@/lib/api";
+import type { TeleopState } from "@/lib/types";
 
 const AssemblyViewer = dynamic(
   () =>
@@ -30,6 +34,28 @@ export default function DashboardPage() {
     resumeExecution,
     stopExecution,
   } = useExecution();
+  const { isTeaching, stopTeaching } = useTeaching();
+
+  const { data: teleop } = useSWR<TeleopState>(
+    "/teleop/state",
+    api.getTeleopState,
+    { refreshInterval: 3000 },
+  );
+
+  const toggleTeleop = useCallback(async () => {
+    const isActive = teleop?.active ?? false;
+    await mutate("/teleop/state", { active: !isActive, arms: [] }, { revalidate: false });
+    try {
+      if (isActive) {
+        await api.stopTeleop();
+      } else {
+        await api.startTeleop([]);
+      }
+      await mutate("/teleop/state");
+    } catch {
+      await mutate("/teleop/state");
+    }
+  }, [teleop?.active]);
 
   const handlers = useMemo(
     () => ({
@@ -44,7 +70,11 @@ export default function DashboardPage() {
         }
       },
       Escape: () => {
-        if (executionState.phase !== "idle") stopExecution();
+        if (isTeaching) {
+          void stopTeaching();
+        } else if (executionState.phase !== "idle") {
+          stopExecution();
+        }
       },
       ArrowUp: (e: KeyboardEvent) => {
         e.preventDefault();
@@ -62,6 +92,9 @@ export default function DashboardPage() {
         const next = Math.min(order.length - 1, idx + 1);
         selectStep(order[next] ?? null);
       },
+      t: () => {
+        toggleTeleop();
+      },
     }),
     [
       assembly,
@@ -72,6 +105,9 @@ export default function DashboardPage() {
       pauseExecution,
       resumeExecution,
       stopExecution,
+      toggleTeleop,
+      isTeaching,
+      stopTeaching,
     ],
   );
 
@@ -84,9 +120,17 @@ export default function DashboardPage() {
 
       <main className="flex min-h-0 flex-1">
         {/* Left: 3D Viewer (70%) */}
-        <div className="relative h-full w-[70%]">
+        <div
+          className="relative h-full w-[70%] transition-shadow duration-300"
+          style={
+            isTeaching
+              ? { boxShadow: "inset 0 0 0 2px #DC2626" }
+              : undefined
+          }
+        >
           <AssemblyViewer />
           <CameraPiP />
+          <TeachingOverlay />
         </div>
 
         {/* Divider */}
@@ -104,8 +148,6 @@ export default function DashboardPage() {
       </main>
 
       <BottomBar />
-
-      <TeachingOverlay />
     </div>
   );
 }

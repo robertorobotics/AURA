@@ -31,7 +31,7 @@ function IconButton({
     <button
       title={title}
       onClick={onClick}
-      className={`flex h-7 w-7 items-center justify-center rounded-md bg-white/85 backdrop-blur-sm transition-colors hover:bg-white ${
+      className={`pointer-events-auto flex h-7 w-7 items-center justify-center rounded-md bg-white/85 backdrop-blur-sm transition-colors hover:bg-white ${
         active ? "text-signal" : "text-text-secondary"
       }`}
     >
@@ -58,7 +58,7 @@ export function ViewerControls({
   const showPause = animating && !paused;
 
   return (
-    <div className="absolute right-3 top-3 flex flex-col gap-1 rounded-md bg-white/70 p-1 backdrop-blur-sm">
+    <div className="pointer-events-none absolute right-3 top-3 flex flex-col gap-1 rounded-md bg-white/70 p-1 backdrop-blur-sm">
       <IconButton title="Reset view (R)" onClick={onResetView}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <path d="M2 8a6 6 0 0 1 10.5-4M14 8a6 6 0 0 1-10.5 4" />

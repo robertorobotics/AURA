@@ -4,7 +4,7 @@ import { Suspense, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Edges, useGLTF } from "@react-three/drei";
 import type { Group, Material, MeshStandardMaterial } from "three";
-import { Box3, Mesh, Vector3 } from "three";
+import { Mesh } from "three";
 import type { Part } from "@/lib/types";
 import type { PartRenderState } from "@/lib/animation";
 import { GraspPoint } from "./GraspPoint";
@@ -23,9 +23,11 @@ function GlbMesh({ url }: { url: string }) {
   const fullUrl = url.startsWith("http") ? url : `${API_BASE}${url}`;
   const { scene } = useGLTF(fullUrl);
 
-  // Clone scene with independent materials, scale mm→m, then recenter.
+  // Clone scene with independent materials and scale mm→m.
   // OCC tessellation outputs vertices in millimeters; the Three.js scene uses
   // meters (matching assembly JSON positions). Scale by 0.001 to reconcile.
+  // Centering is done once in the backend (mesh_utils.tessellate_to_glb),
+  // so Part.position is the sole placement — no re-centering needed here.
   const cloned = useMemo(() => {
     const c = scene.clone();
     c.traverse((child) => {
@@ -37,12 +39,6 @@ function GlbMesh({ url }: { url: string }) {
 
     // OCC tessellation produces mm-scale vertices; Three.js scene uses meters
     c.scale.setScalar(0.001);
-
-    const box = new Box3().setFromObject(c);
-    const center = box.getCenter(new Vector3());
-    if (center.length() > 0.0001) {
-      c.position.sub(center);
-    }
 
     return c;
   }, [scene]);

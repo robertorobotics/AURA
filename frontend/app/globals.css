@@ -65,3 +65,21 @@ body {
 
 .reveal { opacity: 0; }
 .reveal.revealed { animation: reveal-up 0.4s ease-out forwards; }
+
+/* Save indicator fade-out */
+@keyframes fade-out {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.animate-fade-out {
+  animation: fade-out 1s ease-out forwards;
+}
+
+/* Teaching overlay slide-up */
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0.8; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}

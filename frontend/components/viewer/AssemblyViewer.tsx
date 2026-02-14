@@ -234,6 +234,7 @@ export function AssemblyViewer() {
         camera={{ position: layout.cameraPos, fov: 45, near: layout.near, far: layout.far }}
         style={{ background: "radial-gradient(ellipse at 45% 40%, #FEFDFB 0%, #F9F7F3 80%)" }}
         shadows
+        eventPrefix="offset"
       >
         <CameraSetup layout={layout} controlsRef={controlsRef} />
 
