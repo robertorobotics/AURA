@@ -195,11 +195,17 @@ def test_resting_rotation_flat_box() -> None:
     box = BRepPrimAPI_MakeBox(100.0, 20.0, 80.0).Shape()
     rot = compute_resting_rotation(box)
     assert isinstance(rot, list) and len(rot) == 3
-    # Largest planar face normal is Y-axis → should be near-identity or π-flip
-    # Either way, part rests flat with minimal tilt
-    assert all(abs(r) < 0.1 or abs(abs(r) - 3.141593) < 0.1 for r in rot), (
-        f"Expected near-identity rotation, got {rot}"
-    )
+    # After Z-up→Y-up conversion, the largest face normal (OCC ±Y) becomes ±Z in
+    # Three.js space. Rotation to lay flat is ±π/2 around X, or identity/π-flip
+    # for faces already aligned with ±Y.
+    import math
+
+    assert all(
+        abs(r) < 0.1
+        or abs(abs(r) - math.pi) < 0.1
+        or abs(abs(r) - math.pi / 2) < 0.1
+        for r in rot
+    ), f"Expected valid resting rotation, got {rot}"
 
 
 def test_resting_rotation_tall_cylinder() -> None:

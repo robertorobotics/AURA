@@ -239,9 +239,10 @@ class TestCADParser:
 
         assert success is True
         assert len(bbox_center) == 3
+        # After Z-up→Y-up conversion: [12.5, 22.5, 32.5] → [12.5, 32.5, -22.5]
         assert abs(bbox_center[0] - 12.5) < 0.5
-        assert abs(bbox_center[1] - 22.5) < 0.5
-        assert abs(bbox_center[2] - 32.5) < 0.5
+        assert abs(bbox_center[1] - 32.5) < 0.5
+        assert abs(bbox_center[2] - (-22.5)) < 0.5
 
     def test_bbox_center_vs_vertex_mean(self):
         """Bbox center is [0,0,0] for symmetric bounds, even with skewed density."""
@@ -363,10 +364,10 @@ class TestCADParser:
         success, center = tessellate_to_glb(box, output, unit_scale=0.001)
 
         assert success
-        # Bbox center (25,25,25) mm → (0.025,0.025,0.025) m
+        # Bbox center (25,25,25) mm → Y-up (0.025,0.025,-0.025) m
         assert abs(center[0] - 0.025) < 0.005
         assert abs(center[1] - 0.025) < 0.005
-        assert abs(center[2] - 0.025) < 0.005
+        assert abs(center[2] - (-0.025)) < 0.005
 
         # Load GLB and verify vertex extents are metre-scale
         mesh = trimesh.load(str(output))
@@ -396,10 +397,12 @@ class TestCADParser:
         """Parts in nested sub-assemblies get composed global transforms.
 
         SubAssembly is placed at X=10, BoxA at Y=5, BoxB at Z=3.
-        Global centroids should be:
-            BoxA: (10+0.5, 5+0.5, 0+0.5) = (10.5, 5.5, 0.5)
-            BoxB: (10+1.0, 0+1.0, 3+1.0) = (11.0, 1.0, 4.0)
-        Positions are in mm before normalisation to metres.
+        OCC Z-up centroids:
+            BoxA: (10.5, 5.5, 0.5)
+            BoxB: (11.0, 1.0, 4.0)
+        After Z-up→Y-up conversion [x,y,z]→[x,z,-y] and mm→m:
+            BoxA: (0.0105, 0.0005, -0.0055)
+            BoxB: (0.011, 0.004, -0.001)
         """
         from nextis.assembly.cad_parser import CADParser
 
@@ -415,15 +418,15 @@ class TestCADParser:
             key=lambda p: (p[0], p[1]),
         )
 
-        # BoxA: (10.5, 5.5, 0.5) mm → (0.0105, 0.0055, 0.0005) m
+        # BoxA: Y-up (0.0105, 0.0005, -0.0055) m
         assert abs(positions[0][0] - 0.0105) < 0.001
-        assert abs(positions[0][1] - 0.0055) < 0.001
-        assert abs(positions[0][2] - 0.0005) < 0.001
+        assert abs(positions[0][1] - 0.0005) < 0.001
+        assert abs(positions[0][2] - (-0.0055)) < 0.001
 
-        # BoxB: (11.0, 1.0, 4.0) mm → (0.011, 0.001, 0.004) m
+        # BoxB: Y-up (0.011, 0.004, -0.001) m
         assert abs(positions[1][0] - 0.011) < 0.001
-        assert abs(positions[1][1] - 0.001) < 0.001
-        assert abs(positions[1][2] - 0.004) < 0.001
+        assert abs(positions[1][1] - 0.004) < 0.001
+        assert abs(positions[1][2] - (-0.001)) < 0.001
 
     def test_nested_hierarchy_positions_are_distinct(
         self, step_file_nested_hierarchy: Path, tmp_path: Path

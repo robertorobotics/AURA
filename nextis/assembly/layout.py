@@ -112,7 +112,7 @@ def _resting_height(part: Part) -> float:
     When ``layout_rotation`` is ``None`` (absent / legacy config), falls back to
     ``min(dims) / 2`` because the part orientation is unknown.  When an explicit
     rotation is provided (including identity ``[0, 0, 0]``), computes the actual
-    Y-extent of the rotated bounding box via the rotation matrix second row.
+    Y-extent of the rotated bounding box via the rotation matrix row 1 (Y-row).
     """
     dims = part.dimensions or [0.05, 0.05, 0.05]
 
@@ -122,17 +122,18 @@ def _resting_height(part: Part) -> float:
 
     rot = part.layout_rotation
 
-    # Compute rotated Y-extent from Euler XYZ rotation matrix row 2
+    # Compute rotated Y-extent from Euler XYZ rotation matrix row 1
+    # R = Rz(rz) * Ry(ry) * Rx(rx), row 1: [cx*sz + sx*sy*cz, cx*cz - sx*sy*sz, -sx*cy]
     dx = dims[0] / 2
     dy = (dims[1] if len(dims) > 1 else dims[0]) / 2
     dz = (dims[2] if len(dims) > 2 else dims[0]) / 2
     cx, sx = math.cos(rot[0]), math.sin(rot[0])
     cy, sy = math.cos(rot[1]), math.sin(rot[1])
     cz, sz = math.cos(rot[2]), math.sin(rot[2])
-    r21 = cy * sz
-    r22 = cx * cz + sx * sy * sz
-    r23 = -sx * cz + cx * sy * sz
-    return abs(r21) * dx + abs(r22) * dy + abs(r23) * dz
+    r10 = cx * sz + sx * sy * cz
+    r11 = cx * cz - sx * sy * sz
+    r12 = -sx * cy
+    return abs(r10) * dx + abs(r11) * dy + abs(r12) * dz
 
 
 def _bbox_diagonal(part: Part) -> float:

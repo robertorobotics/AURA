@@ -180,23 +180,24 @@ def compute_bounding_box(
     _static(brepbndlib, "Add")(shape, box)
     xmin, ymin, zmin, xmax, ymax, zmax = box.Get()
 
+    # Convert OCC Z-up to Three.js Y-up: new_Y = old_Z, new_Z = -old_Y
     center = [
         round((xmin + xmax) / 2, 6),
-        round((ymin + ymax) / 2, 6),
         round((zmin + zmax) / 2, 6),
+        round(-(ymin + ymax) / 2, 6),
     ]
     extents = [
         round(xmax - xmin, 6),
-        round(ymax - ymin, 6),
         round(zmax - zmin, 6),
+        round(ymax - ymin, 6),
     ]
     bounds = [
         round(xmin, 6),
-        round(ymin, 6),
         round(zmin, 6),
+        round(-ymax, 6),
         round(xmax, 6),
-        round(ymax, 6),
         round(zmax, 6),
+        round(-ymin, 6),
     ]
     return center, extents, bounds
 
@@ -311,6 +312,10 @@ def compute_resting_rotation(shape: Any) -> list[float]:
         if best_area < 1e-12:
             return [0.0, 0.0, 0.0]
 
+        # Convert normal from OCC Z-up to Three.js Y-up: [nx, ny, nz] → [nx, nz, -ny]
+        nx, ny, nz = best_normal
+        best_normal = (nx, nz, -ny)
+
         return _normal_to_down_euler(best_normal)
 
     except Exception as exc:
@@ -408,6 +413,11 @@ def tessellate_to_glb(
         # Convert source units to metres before any further processing.
         if abs(unit_scale - 1.0) > 1e-9:
             verts *= unit_scale
+
+        # Convert OCC Z-up to Three.js Y-up: [x, y, z] → [x, z, -y]
+        verts_y = verts[:, 1].copy()
+        verts[:, 1] = verts[:, 2]
+        verts[:, 2] = -verts_y
 
         # Center vertices at local origin so Part.position is the sole placement.
         # Use bounding box center (not vertex mean) to avoid position drift
