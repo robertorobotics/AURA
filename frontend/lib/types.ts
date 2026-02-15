@@ -32,6 +32,12 @@ export interface Part {
   geometry?: "box" | "cylinder" | "sphere";
   dimensions?: number[];
   color?: string;
+  /** Pre-assembly position on work surface (from layout computation). */
+  layoutPosition?: [number, number, number];
+  /** Euler XYZ rotation for stable resting on work surface. */
+  layoutRotation?: [number, number, number];
+  /** Whether this part is the base fixture (never animated). */
+  isBase?: boolean;
 }
 
 export interface SuccessCriteria {

@@ -17,6 +17,8 @@ interface ExecutionCameraControllerProps {
   executionAnimRef: React.RefObject<ExecutionAnimState>;
   assemblyCenter: Vec3;
   assemblyRadius: number;
+  workspaceRadius: number;
+  currentPartPosition: Vec3 | null;
 }
 
 const NUDGE_FACTOR = 0.02;
@@ -28,6 +30,8 @@ export function ExecutionCameraController({
   executionAnimRef,
   assemblyCenter,
   assemblyRadius,
+  workspaceRadius,
+  currentPartPosition,
 }: ExecutionCameraControllerProps) {
   const initialSetRef = useRef(false);
   const [userInteracting, setUserInteracting] = useState(false);
@@ -38,9 +42,9 @@ export function ExecutionCameraController({
   // Ideal 3/4 camera position for execution viewing
   const idealCameraPos = useMemo<Vec3>(() => {
     const [cx, cy, cz] = assemblyCenter;
-    const r = assemblyRadius;
+    const r = workspaceRadius;
     return [cx + r * 0.8, cy + r * 0.6, cz + r * 0.8];
-  }, [assemblyCenter, assemblyRadius]);
+  }, [assemblyCenter, workspaceRadius]);
 
   // Track user interaction with orbit controls
   useEffect(() => {
@@ -105,12 +109,11 @@ export function ExecutionCameraController({
 
     // Gentle target nudge toward active part (skip if user is interacting)
     if (userInteracting) return;
-    if (state.endEffectorPhase === "idle") return;
-    const target = state.endEffectorTarget;
+    if (!currentPartPosition) return;
     const ct = controls.target;
-    ct.x += (target[0] - ct.x) * NUDGE_FACTOR;
-    ct.y += (target[1] - ct.y) * NUDGE_FACTOR;
-    ct.z += (target[2] - ct.z) * NUDGE_FACTOR;
+    ct.x += (currentPartPosition[0] - ct.x) * NUDGE_FACTOR;
+    ct.y += (currentPartPosition[1] - ct.y) * NUDGE_FACTOR;
+    ct.z += (currentPartPosition[2] - ct.z) * NUDGE_FACTOR;
   });
 
   return null;

@@ -4,7 +4,7 @@ import { Suspense, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Edges, useGLTF } from "@react-three/drei";
 import type { Group, MeshStandardMaterial } from "three";
-import { Mesh } from "three";
+import { DoubleSide, Mesh } from "three";
 import type { Part } from "@/lib/types";
 import type { PartRenderState } from "@/lib/animation";
 import { GraspPoint } from "./GraspPoint";
@@ -33,7 +33,9 @@ function GlbMesh({ url }: { url: string }) {
       if ((child as Mesh).isMesh) {
         const m = child as Mesh;
         m.geometry = m.geometry.clone();
-        m.material = (m.material as MeshStandardMaterial).clone();
+        const mat = (m.material as MeshStandardMaterial).clone();
+        mat.side = DoubleSide;
+        m.material = mat;
       }
     });
     return root;
@@ -81,7 +83,7 @@ export function PartMesh({
 
     // Position + rotation
     groupRef.current.position.set(rs.position[0], rs.position[1], rs.position[2]);
-    const rot = part.rotation;
+    const rot = rs.rotation ?? part.rotation;
     if (rot) {
       groupRef.current.rotation.set(rot[0], rot[1], rot[2]);
     }

@@ -21,6 +21,8 @@ const PARTS: Assembly["parts"] = {
     geometry: "box",
     dimensions: [0.08, 0.04, 0.06],
     color: "#B0AEA8",
+    layoutPosition: [0.12, 0.02, 0.08],
+    layoutRotation: [0, 0, 0],
   },
   bearing: {
     id: "bearing",
@@ -31,6 +33,8 @@ const PARTS: Assembly["parts"] = {
     geometry: "cylinder",
     dimensions: [0.015, 0.01],
     color: "#8A8884",
+    layoutPosition: [-0.08, 0.005, 0.1],
+    layoutRotation: [0, 0, 0],
   },
   fixture: {
     id: "fixture",
@@ -41,6 +45,9 @@ const PARTS: Assembly["parts"] = {
     geometry: "box",
     dimensions: [0.1, 0.02, 0.08],
     color: "#D4D3CF",
+    isBase: true,
+    layoutPosition: [0, 0.01, 0],
+    layoutRotation: [0, 0, 0],
   },
   pin_1: {
     id: "pin_1",
@@ -51,6 +58,8 @@ const PARTS: Assembly["parts"] = {
     geometry: "cylinder",
     dimensions: [0.003, 0.015],
     color: "#7A7974",
+    layoutPosition: [-0.12, 0.0075, 0.08],
+    layoutRotation: [0, 0, 0],
   },
   pin_2: {
     id: "pin_2",
@@ -61,6 +70,8 @@ const PARTS: Assembly["parts"] = {
     geometry: "cylinder",
     dimensions: [0.003, 0.015],
     color: "#7A7974",
+    layoutPosition: [0.08, 0.0075, 0.12],
+    layoutRotation: [0, 0, 0],
   },
 };
 

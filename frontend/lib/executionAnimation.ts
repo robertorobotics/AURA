@@ -5,7 +5,7 @@ import type { Part, AssemblyStep, StepStatus, ExecutionState } from "./types";
 import {
   type Vec3,
   type PartRenderState,
-  approachPosition,
+  computeApproachPosition,
   easeInOut,
   partStepIndex,
 } from "./animation";
@@ -30,7 +30,9 @@ export type EndEffectorPhase = "idle" | "approach" | "grasp" | "place" | "retrac
 export interface ExecutionAnimState {
   stepAnims: Record<string, StepAnimState>;
   prevRunningStepId: string | null;
+  // TODO: Remove endEffectorTarget once camera tracking is refactored
   endEffectorTarget: Vec3;
+  // TODO: Remove endEffectorPhase once camera tracking is refactored
   endEffectorPhase: EndEffectorPhase;
   /** 200ms countdown between steps. */
   transitionPauseRemaining: number;
@@ -81,9 +83,13 @@ export function primitiveApproachOffset(
   const pType = step?.primitiveType ?? "";
 
   switch (pType) {
-    case "pick":
-      // Lift up from a tray position (below and to the side)
-      return [base[0] - offset * 0.3, base[1] - offset, base[2]];
+    case "pick": {
+      // Start from layout position (tray) if available
+      const layout: Vec3 = part.layoutPosition
+        ? [part.layoutPosition[0], part.layoutPosition[1], part.layoutPosition[2]]
+        : [base[0] - offset * 0.3, base[1] - offset, base[2]];
+      return layout;
+    }
 
     case "place":
       // Descend from directly above
@@ -107,7 +113,7 @@ export function primitiveApproachOffset(
     }
 
     default:
-      return approachPosition(part, assemblyRadius);
+      return computeApproachPosition(part, assemblyRadius);
   }
 }
 
@@ -175,24 +181,9 @@ export function tickExecutionAnim(
     next.prevRunningStepId = currentRunning;
   }
 
-  // Update end-effector target based on current running step
-  if (currentRunning) {
-    const anim = next.stepAnims[currentRunning];
-    if (anim && anim.status === "running") {
-      const mp = anim.motionProgress;
-      if (mp < 0.3) {
-        next.endEffectorPhase = "approach";
-      } else if (mp < 0.7) {
-        next.endEffectorPhase = "grasp";
-      } else {
-        next.endEffectorPhase = "place";
-      }
-    } else {
-      next.endEffectorPhase = "retract";
-    }
-  } else {
-    next.endEffectorPhase = "idle";
-  }
+  // TODO: endEffectorPhase is no longer consumed after RobotArm removal.
+  // Kept in the type for future real-arm visualization.
+  next.endEffectorPhase = "idle";
 
   return next;
 }
@@ -215,17 +206,24 @@ export function computeExecutionPartState(
   const status = stepAnim?.status ?? "pending";
 
   switch (status) {
-    case "pending":
+    case "pending": {
+      const layoutPos: Vec3 = part.layoutPosition
+        ? [part.layoutPosition[0], part.layoutPosition[1], part.layoutPosition[2]]
+        : base;
       if (isNextStep) {
-        // Pulsing preview at approach position
+        // Pulsing preview at layout position (on the tray)
+        const previewPos: Vec3 = part.layoutPosition
+          ? [part.layoutPosition[0], part.layoutPosition[1], part.layoutPosition[2]]
+          : approach;
         return {
-          position: approach,
+          position: previewPos,
           opacity: 0.4 + 0.1 * Math.sin(clock * 3),
           visualState: "active",
         };
       }
-      // Future parts: nearly opaque at final position
-      return { position: base, opacity: 0.85, visualState: "complete" };
+      // Future parts: at layout position (on the tray)
+      return { position: layoutPos, opacity: 0.85, visualState: "complete" };
+    }
 
     case "running":
     case "retrying": {
@@ -334,7 +332,10 @@ export function computeExecutionPartState(
 // End-effector target computation
 // ---------------------------------------------------------------------------
 
-/** Compute end-effector target position for the robot arm. */
+/**
+ * Compute end-effector target position for the robot arm.
+ * TODO: No longer called after RobotArm removal. Keep for future real-arm visualization.
+ */
 export function computeEndEffectorTarget(
   part: Part,
   step: AssemblyStep | undefined,

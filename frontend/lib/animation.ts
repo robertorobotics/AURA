@@ -31,6 +31,8 @@ export type Vec3 = [number, number, number];
 
 export interface PartRenderState {
   position: Vec3;
+  /** Euler XYZ rotation. Undefined = use part.rotation (assembled). */
+  rotation?: Vec3;
   opacity: number;
   visualState: "ghost" | "active" | "complete";
   /** Execution mode: override part color (e.g. red flash on fail). */
@@ -47,8 +49,8 @@ export const TIMING = {
   DEMO_FADEIN_PER_PART: 0.1,
   DEMO_HOLD: 0.5,
   DEMO_EXPLODE: 0.6,
-  STEP_EASE_IN: 0.5,
-  STEP_HOLD: 0.3,
+  STEP_EASE_IN: 0.8,
+  STEP_HOLD: 0.2,
 } as const;
 
 const STEP_DURATION = TIMING.STEP_EASE_IN + TIMING.STEP_HOLD;
@@ -119,14 +121,72 @@ export function computeExplodeOffset(
   return [(dx / len) * dist, (dy / len) * dist, (dz / len) * dist];
 }
 
-/** Approach position: offset along inverted approach vector. */
-export function approachPosition(part: Part, assemblyRadius: number): Vec3 {
+/** Max distance from centroid to any part's position OR layoutPosition — full workspace extent. */
+export function computeWorkspaceRadius(parts: Part[], centroid: Vec3): number {
+  let maxR = 0;
+  for (const p of parts) {
+    const v = vec3(p.position);
+    const dx = v[0] - centroid[0], dy = v[1] - centroid[1], dz = v[2] - centroid[2];
+    maxR = Math.max(maxR, Math.sqrt(dx * dx + dy * dy + dz * dz));
+    if (p.layoutPosition) {
+      const lx = p.layoutPosition[0] - centroid[0];
+      const ly = p.layoutPosition[1] - centroid[1];
+      const lz = p.layoutPosition[2] - centroid[2];
+      maxR = Math.max(maxR, Math.sqrt(lx * lx + ly * ly + lz * lz));
+    }
+  }
+  return maxR || 0.1;
+}
+
+/** Approach position: offset along inverted approach vector (just before insertion). */
+export function computeApproachPosition(part: Part, assemblyRadius: number): Vec3 {
   const base = vec3(part.position);
   const a = vec3(part.graspPoints[0]?.approach);
   const ax = a[0] || 0, ay = a[1] || -1, az = a[2] || 0;
   const dims = vec3(part.dimensions ?? [0.05, 0.05, 0.05]);
   const d = Math.max(Math.max(dims[0], dims[1], dims[2]) * 3, assemblyRadius * 0.5);
   return [base[0] - ax * d, base[1] - ay * d, base[2] - az * d];
+}
+
+/** Linear interpolation between two Vec3 values. */
+export function lerpVec3(a: Vec3, b: Vec3, t: number): Vec3 {
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+}
+
+/**
+ * 3-phase animation for a part being assembled in the current step.
+ *
+ *   Phase 1 (0.00–0.25): Lift from layoutPosition straight up by liftHeight.
+ *   Phase 2 (0.25–0.65): Transit from lifted position to approach position.
+ *   Phase 3 (0.65–1.00): Insert from approach position to assembled position.
+ */
+export function computePhasePosition(
+  part: Part,
+  stepProgress: number,
+  assemblyRadius: number,
+): { position: Vec3; rotation: Vec3; opacity: number } {
+  const layout: Vec3 = (part.layoutPosition as Vec3) ?? (part.position as Vec3) ?? [0, 0, 0];
+  const assembled: Vec3 = (part.position as Vec3) ?? [0, 0, 0];
+  const layoutRot: Vec3 = (part.layoutRotation as Vec3) ?? [0, 0, 0];
+  const assembledRot: Vec3 = (part.rotation as Vec3) ?? [0, 0, 0];
+  const approach = computeApproachPosition(part, assemblyRadius);
+  const maxDim = Math.max(...(part.dimensions ?? [0.05, 0.05, 0.05]));
+  const liftHeight = Math.max(maxDim * 2, 0.04);
+  const lifted: Vec3 = [layout[0], layout[1] + liftHeight, layout[2]];
+
+  if (stepProgress < 0.25) {
+    // Phase 1: Lift from tray — keep layout rotation
+    const t = easeInOut(stepProgress / 0.25);
+    return { position: lerpVec3(layout, lifted, t), rotation: layoutRot, opacity: 0.4 + 0.6 * t };
+  }
+  if (stepProgress < 0.65) {
+    // Phase 2: Transit to approach — keep layout rotation
+    const t = easeInOut((stepProgress - 0.25) / 0.4);
+    return { position: lerpVec3(lifted, approach, t), rotation: layoutRot, opacity: 1 };
+  }
+  // Phase 3: Insert — lerp rotation from layout to assembled
+  const t = easeInOut((stepProgress - 0.65) / 0.35);
+  return { position: lerpVec3(approach, assembled, t), rotation: lerpVec3(layoutRot, assembledRot, t), opacity: 1 };
 }
 
 // ---------------------------------------------------------------------------
@@ -219,51 +279,61 @@ export function computePartAnimation(
   assemblyRadius: number,
 ): PartRenderState {
   const base: Vec3 = (part.position as Vec3 | undefined) ?? [0, 0, 0];
+  const assembledRot: Vec3 = (part.rotation as Vec3) ?? [0, 0, 0];
+  const layoutRot: Vec3 = (part.layoutRotation as Vec3) ?? [0, 0, 0];
 
-  // Idle — everything at assembled position, fully opaque
+  // Idle — base parts and post-demo at assembled position; pre-demo at layout position
   if (state.phase === "idle") {
-    return { position: base, opacity: 1, visualState: "complete" };
+    if (part.isBase) {
+      return { position: base, rotation: assembledRot, opacity: 1, visualState: "complete" };
+    }
+    if (!state.demoPlayed) {
+      const layout: Vec3 = part.layoutPosition ?? base;
+      return { position: layout, rotation: layoutRot, opacity: 0.9, visualState: "ghost" };
+    }
+    return { position: base, rotation: assembledRot, opacity: 1, visualState: "complete" };
   }
 
-  // Fade-in — sequential opacity
+  // Fade-in — sequential opacity (assembled rotation)
   if (state.phase === "demo_fadein") {
     const idx = partStepIndex(part.id, stepOrder, steps);
     const partIdx = idx >= 0 ? idx : 0;
     const fadeStart = partIdx * TIMING.DEMO_FADEIN_PER_PART;
     const fadeEnd = fadeStart + TIMING.DEMO_FADEIN_PER_PART;
     const opacity = Math.min(1, Math.max(0, (state.phaseTime - fadeStart) / (fadeEnd - fadeStart)));
-    return { position: base, opacity, visualState: "complete" };
+    return { position: base, rotation: assembledRot, opacity, visualState: "complete" };
   }
 
-  // Hold — all visible
+  // Hold — all visible (assembled rotation)
   if (state.phase === "demo_hold") {
-    return { position: base, opacity: 1, visualState: "complete" };
+    return { position: base, rotation: assembledRot, opacity: 1, visualState: "complete" };
   }
 
   // Explode — handled externally via explodeFactor, position stays at base
   if (state.phase === "demo_explode") {
-    return { position: base, opacity: 1, visualState: "complete" };
+    return { position: base, rotation: assembledRot, opacity: 1, visualState: "complete" };
   }
 
   // Playing or demo_assemble — step-based interpolation
+
+  // Base part: always at assembled position, never animated
+  if (part.isBase) {
+    return { position: base, rotation: assembledRot, opacity: 1, visualState: "complete" };
+  }
+
   const psi = partStepIndex(part.id, stepOrder, steps);
-  if (psi < 0) return { position: base, opacity: 1, visualState: "complete" };
+  if (psi < 0) return { position: base, rotation: assembledRot, opacity: 1, visualState: "complete" };
 
   if (psi < state.stepIndex) {
-    return { position: base, opacity: 1, visualState: "complete" };
+    return { position: base, rotation: assembledRot, opacity: 1, visualState: "complete" };
   }
   if (psi === state.stepIndex) {
-    const t = easeInOut(state.stepProgress);
-    const ap = approachPosition(part, assemblyRadius);
-    const pos: Vec3 = [
-      ap[0] + (base[0] - ap[0]) * t,
-      ap[1] + (base[1] - ap[1]) * t,
-      ap[2] + (base[2] - ap[2]) * t,
-    ];
-    return { position: pos, opacity: 0.3 + 0.7 * t, visualState: "active" };
+    const { position, rotation, opacity } = computePhasePosition(part, state.stepProgress, assemblyRadius);
+    return { position, rotation, opacity, visualState: "active" };
   }
-  // Future step — at approach position, ghost
-  return { position: approachPosition(part, assemblyRadius), opacity: 0.15, visualState: "ghost" };
+  // Future step — at layout position, ghost
+  const layout: Vec3 = part.layoutPosition ?? computeApproachPosition(part, assemblyRadius);
+  return { position: layout, rotation: layoutRot, opacity: 0.9, visualState: "ghost" };
 }
 
 // ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@ import { MOUSE, TOUCH } from "three";
 import type { PerspectiveCamera } from "three";
 import { useAssembly } from "@/context/AssemblyContext";
 import { useExecution } from "@/context/ExecutionContext";
-import { computeCentroid, computeAssemblyRadius, partStepIndex } from "@/lib/animation";
+import { computeCentroid, computeAssemblyRadius, computeWorkspaceRadius, partStepIndex } from "@/lib/animation";
 import type { Vec3 } from "@/lib/animation";
 import { useAnimationControls } from "@/lib/useAnimationControls";
 import { INITIAL_EXEC_ANIM } from "@/lib/executionAnimation";
@@ -19,7 +19,6 @@ import { ApproachVector } from "./ApproachVector";
 import { AnimationController } from "./AnimationController";
 import { ViewerControls } from "./ViewerControls";
 import { AnimationTimeline } from "./AnimationTimeline";
-import { RobotArm } from "./RobotArm";
 import { ExecutionCameraController } from "./ExecutionCameraController";
 import { ExecutionProgressHUD } from "./ExecutionProgressHUD";
 import { ViewerErrorBoundary } from "./ViewerErrorBoundary";
@@ -86,7 +85,7 @@ function CameraSetup({
 // Compute scene layout from assembly parts
 // ---------------------------------------------------------------------------
 
-function computeLayout(parts: { position?: number[]; dimensions?: number[] }[]): SceneLayout {
+function computeLayout(parts: { position?: number[]; layoutPosition?: number[]; dimensions?: number[] }[]): SceneLayout {
   if (parts.length === 0) return DEFAULTS;
 
   let minX = Infinity, minY = Infinity, minZ = Infinity;
@@ -105,6 +104,16 @@ function computeLayout(parts: { position?: number[]; dimensions?: number[] }[]):
     maxX = Math.max(maxX, px + dx / 2);
     maxY = Math.max(maxY, py + dy / 2);
     maxZ = Math.max(maxZ, pz + dz / 2);
+    // Include layoutPosition in bounding box so camera frames the full workspace
+    const lx = part.layoutPosition?.[0] ?? px;
+    const ly = part.layoutPosition?.[1] ?? py;
+    const lz = part.layoutPosition?.[2] ?? pz;
+    minX = Math.min(minX, lx - dx / 2);
+    minY = Math.min(minY, ly - dy / 2);
+    minZ = Math.min(minZ, lz - dz / 2);
+    maxX = Math.max(maxX, lx + dx / 2);
+    maxY = Math.max(maxY, ly + dy / 2);
+    maxZ = Math.max(maxZ, lz + dz / 2);
   }
 
   const cx = (minX + maxX) / 2;
@@ -123,7 +132,7 @@ function computeLayout(parts: { position?: number[]; dimensions?: number[] }[]):
     near: radius * 0.001,
     far: radius * 40,
     maxDist: radius * 15,
-    groundY: minY - radius * 0.02,
+    groundY: 0,
     gridCell: radius * 0.04,
     gridSection: radius * 0.2,
   };
@@ -156,6 +165,10 @@ export function AssemblyViewer() {
     () => computeAssemblyRadius(parts, centroid),
     [parts, centroid],
   );
+  const workspaceRadius = useMemo(
+    () => computeWorkspaceRadius(parts, centroid),
+    [parts, centroid],
+  );
 
   // Execution animation state
   const executionAnimRef = useRef<ExecutionAnimState>({ ...INITIAL_EXEC_ANIM });
@@ -163,11 +176,14 @@ export function AssemblyViewer() {
     (executionState.phase === "running" || executionState.phase === "paused") &&
     executionState.assemblyId === assembly?.id;
 
-  // Robot arm base position (left of assembly, at ground level)
-  const armBase = useMemo<Vec3>(
-    () => [centroid[0] - assemblyRadius * 1.5, layout.groundY, centroid[2]],
-    [centroid, assemblyRadius, layout.groundY],
-  );
+  // Position of the part in the current execution step (for camera tracking)
+  const currentPartPosition = useMemo<Vec3 | null>(() => {
+    if (!executionActive || !executionState.currentStepId) return null;
+    const step = steps[executionState.currentStepId];
+    const partId = step?.partIds[0];
+    const part = partId ? assembly?.parts[partId] : undefined;
+    return (part?.position as Vec3) ?? null;
+  }, [executionActive, executionState.currentStepId, steps, assembly?.parts]);
 
   // Pre-compute part → first step id mapping
   const partToStepId = useMemo(() => {
@@ -257,6 +273,9 @@ export function AssemblyViewer() {
           groundY={layout.groundY}
           cellSize={layout.gridCell}
           sectionSize={layout.gridSection}
+          surfaceWidth={Math.max(workspaceRadius * 5, 0.5)}
+          surfaceDepth={Math.max(workspaceRadius * 4, 0.4)}
+          assemblyRadius={assemblyRadius}
         />
 
         <AnimationController
@@ -296,19 +315,14 @@ export function AssemblyViewer() {
             </group>
           ))}
 
-        <RobotArm
-          basePosition={armBase}
-          executionAnimRef={executionAnimRef}
-          visible={executionActive}
-          assemblyRadius={assemblyRadius}
-        />
-
         <ExecutionCameraController
           controlsRef={controlsRef}
           executionActive={executionActive}
           executionAnimRef={executionAnimRef}
           assemblyCenter={centroid}
           assemblyRadius={assemblyRadius}
+          workspaceRadius={workspaceRadius}
+          currentPartPosition={currentPartPosition}
         />
 
         <OrbitControls

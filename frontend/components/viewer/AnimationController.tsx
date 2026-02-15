@@ -26,7 +26,6 @@ import {
   type ExecutionAnimState,
   tickExecutionAnim,
   computeExecutionPartState,
-  computeEndEffectorTarget,
 } from "@/lib/executionAnimation";
 
 interface AnimationControllerProps {
@@ -84,11 +83,6 @@ export function AnimationController({
       Object.assign(executionAnimRef.current, nextExec);
 
       const result: Record<string, PartRenderState> = {};
-      const neutralEE: Vec3 = [
-        centroidRef.current[0],
-        centroidRef.current[1] + radiusRef.current * 0.8,
-        centroidRef.current[2],
-      ];
 
       // Determine the next step index (one after current running step)
       const currentIdx = executionState.currentStepId
@@ -108,13 +102,6 @@ export function AnimationController({
         result[part.id] = computeExecutionPartState(
           part, step, stepAnim, radiusRef.current, clock.elapsedTime, isNextStep,
         );
-
-        // Update end-effector target for the currently running step
-        if (stepId === executionState.currentStepId && stepAnim) {
-          executionAnimRef.current.endEffectorTarget = computeEndEffectorTarget(
-            part, step, stepAnim, radiusRef.current, neutralEE,
-          );
-        }
       }
 
       renderStatesRef.current = result;
