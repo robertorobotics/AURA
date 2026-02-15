@@ -109,15 +109,18 @@ def _part_volume(part: Part) -> float:
 def _resting_height(part: Part) -> float:
     """Half the Y-extent after applying layout_rotation — how high the part sits.
 
-    When ``layout_rotation`` is identity or absent, falls back to ``min(dims) / 2``
-    (the smallest dimension, i.e. resting on the flattest side). With a non-trivial
-    rotation, computes the actual Y-extent of the rotated bounding box.
+    When ``layout_rotation`` is ``None`` (absent / legacy config), falls back to
+    ``min(dims) / 2`` because the part orientation is unknown.  When an explicit
+    rotation is provided (including identity ``[0, 0, 0]``), computes the actual
+    Y-extent of the rotated bounding box via the rotation matrix second row.
     """
     dims = part.dimensions or [0.05, 0.05, 0.05]
-    rot = part.layout_rotation or [0.0, 0.0, 0.0]
 
-    if all(abs(r) < 1e-6 for r in rot):
+    # No layout_rotation computed — legacy fallback: rest on thinnest side
+    if part.layout_rotation is None:
         return min(dims) / 2
+
+    rot = part.layout_rotation
 
     # Compute rotated Y-extent from Euler XYZ rotation matrix row 2
     dx = dims[0] / 2
@@ -140,6 +143,16 @@ def _bbox_diagonal(part: Part) -> float:
     if len(dims) == 2:
         return math.sqrt((dims[0] * 2) ** 2 + dims[1] ** 2)  # cylinder
     return math.sqrt(sum(d**2 for d in dims[:3]))  # box
+
+
+def _xz_footprint(part: Part) -> float:
+    """Maximum extent of a part in the XZ ground plane."""
+    dims = part.dimensions or [0.05, 0.05, 0.05]
+    if len(dims) == 1:
+        return dims[0] * 2  # sphere diameter
+    if len(dims) == 2:
+        return math.sqrt((dims[0] * 2) ** 2 + dims[1] ** 2)  # cylinder
+    return math.sqrt(dims[0] ** 2 + dims[2] ** 2)  # box XZ diagonal
 
 
 def _compute_assembly_radius(parts: list[Part]) -> float:
@@ -181,23 +194,51 @@ def _semicircle_layout(parts: list[Part], assembly_radius: float) -> None:
     """Arrange parts in a semicircle behind the base (positive Z).
 
     Arc spans pi/6 to 5*pi/6 in the XZ plane, centered at the origin.
+    Each part's angular footprint is proportional to its XZ extent,
+    preventing bounding-box overlaps between neighbours.
     """
     n = len(parts)
     if n == 0:
         return
 
     radius = max(assembly_radius * _RADIUS_FACTOR, _MIN_SPACING * 3)
+    arc_range = _ARC_END - _ARC_START
 
     if n == 1:
-        angles = [math.pi / 2]  # directly behind
-    else:
-        angles = [_ARC_START + (_ARC_END - _ARC_START) * i / (n - 1) for i in range(n)]
-
-    for i, part in enumerate(parts):
-        x = radius * math.cos(angles[i])
-        z = radius * math.sin(angles[i])  # positive Z = behind base
+        angle = math.pi / 2  # directly behind
+        part = parts[0]
+        x = radius * math.cos(angle)
+        z = radius * math.sin(angle)
         y = _resting_height(part)
         part.layout_position = [round(x, 6), round(y, 6), round(z, 6)]
+        return
+
+    # Angular footprint per part + minimum gap between neighbours
+    gap_angle = _MIN_SPACING / radius
+    angular_widths = [_xz_footprint(p) / radius for p in parts]
+    total_angle = sum(angular_widths) + gap_angle * (n - 1)
+
+    # Grow radius if parts don't fit within the arc
+    if total_angle > arc_range:
+        total_footprint = sum(_xz_footprint(p) for p in parts)
+        total_gaps = _MIN_SPACING * (n - 1)
+        radius = (total_footprint + total_gaps) / arc_range
+        gap_angle = _MIN_SPACING / radius
+        angular_widths = [_xz_footprint(p) / radius for p in parts]
+        total_angle = sum(angular_widths) + gap_angle * (n - 1)
+
+    # Centre the arrangement within the arc
+    offset = _ARC_START + (arc_range - total_angle) / 2
+
+    # Place parts sequentially along the arc
+    current_angle = offset
+    for i, part in enumerate(parts):
+        center_angle = current_angle + angular_widths[i] / 2
+        x = radius * math.cos(center_angle)
+        z = radius * math.sin(center_angle)
+        y = _resting_height(part)
+        part.layout_position = [round(x, 6), round(y, 6), round(z, 6)]
+        current_angle += angular_widths[i] + gap_angle
 
 
 def _grid_layout(parts: list[Part], assembly_radius: float) -> None:

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
-from nextis.assembly.layout import compute_layout_positions
+from nextis.assembly.layout import _resting_height, compute_layout_positions
 from nextis.assembly.models import AssemblyGraph
 
 
@@ -109,6 +111,40 @@ def test_identical_assembled_positions_get_distinct_layout() -> None:
     assert len(set(layout_pos)) == 4, "All satellites must have distinct layout positions"
 
 
+def test_semicircle_no_overlaps_varying_sizes() -> None:
+    """5 non-base parts of varying sizes in semicircle: no XZ bounding circles overlap."""
+    graph = _make_graph(
+        [
+            {"id": "base", "dimensions": [0.1, 0.08, 0.1]},
+            {"id": "big1", "dimensions": [0.05, 0.006, 0.05]},  # bearing-sized
+            {"id": "big2", "dimensions": [0.042, 0.043, 0.004]},  # plate-sized
+            {"id": "small1", "dimensions": [0.014, 0.014, 0.01]},  # gear-sized
+            {"id": "small2", "dimensions": [0.014, 0.014, 0.01]},  # gear-sized
+            {"id": "med1", "dimensions": [0.042, 0.042, 0.011]},  # medium part
+        ]
+    )
+    compute_layout_positions(graph)
+
+    non_base = [p for p in graph.parts.values() if not p.is_base]
+    assert len(non_base) == 5
+
+    # No pair of non-base parts should have overlapping XZ footprints
+    for i, a in enumerate(non_base):
+        for b in non_base[i + 1 :]:
+            da = a.dimensions or [0.05, 0.05, 0.05]
+            db = b.dimensions or [0.05, 0.05, 0.05]
+            la = a.layout_position
+            lb = b.layout_position
+            assert la is not None and lb is not None
+            foot_a = math.sqrt(da[0] ** 2 + (da[2] if len(da) > 2 else da[0]) ** 2)
+            foot_b = math.sqrt(db[0] ** 2 + (db[2] if len(db) > 2 else db[0]) ** 2)
+            dist_xz = math.sqrt((la[0] - lb[0]) ** 2 + (la[2] - lb[2]) ** 2)
+            min_dist = (foot_a + foot_b) / 2
+            assert dist_xz >= min_dist * 0.99, (
+                f"{a.id} and {b.id} too close: dist={dist_xz:.4f} < min={min_dist:.4f}"
+            )
+
+
 def test_grid_layout_no_overlaps() -> None:
     """>12 non-base parts triggers grid layout; no bounding boxes overlap in XZ."""
     parts_data = [
@@ -177,3 +213,29 @@ def test_resting_rotation_tall_cylinder() -> None:
     cyl = BRepPrimAPI_MakeCylinder(5.0, 100.0).Shape()
     rot = compute_resting_rotation(cyl)
     assert isinstance(rot, list) and len(rot) == 3
+
+
+# ---------------------------------------------------------------------------
+# Resting height semantics (None vs explicit identity)
+# ---------------------------------------------------------------------------
+
+
+def test_resting_height_none_vs_identity() -> None:
+    """layout_rotation=None uses min(dims)/2; explicit [0,0,0] uses dims[1]/2."""
+    from nextis.assembly.models import Part
+
+    # None (legacy): min(dims)/2
+    p_none = Part(id="t_none", dimensions=[0.066, 0.066, 0.024], layout_rotation=None)
+    assert abs(_resting_height(p_none) - 0.012) < 1e-6
+
+    # Explicit identity: rotated formula → dims[1]/2
+    p_id = Part(id="t_id", dimensions=[0.066, 0.066, 0.024], layout_rotation=[0.0, 0.0, 0.0])
+    assert abs(_resting_height(p_id) - 0.033) < 1e-6
+
+    # Non-trivial rotation: 90° around X → Y-extent becomes original Z-extent
+    p_rot = Part(
+        id="t_rot",
+        dimensions=[0.05, 0.006, 0.05],
+        layout_rotation=[math.pi / 2, 0.0, 0.0],
+    )
+    assert abs(_resting_height(p_rot) - 0.025) < 1e-6
