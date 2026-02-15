@@ -23,7 +23,13 @@
         0.065879807,
         0.024012588
       ],
-      "color": "#7A7974"
+      "color": "#7A7974",
+      "layoutPosition": [
+        0.0,
+        0.012006294,
+        0.0
+      ],
+      "isBase": true
     },
     "6708_bearing_v1": {
       "id": "6708_bearing_v1",
@@ -46,7 +52,13 @@
         0.006,
         0.05
       ],
-      "color": "#C4A882"
+      "color": "#C4A882",
+      "layoutPosition": [
+        0.069269,
+        0.003,
+        0.143838
+      ],
+      "isBase": false
     },
     "satellite_top_v1": {
       "id": "satellite_top_v1",
@@ -69,7 +81,13 @@
         0.042,
         0.011
       ],
-      "color": "#7A7974"
+      "color": "#7A7974",
+      "layoutPosition": [
+        0.138259,
+        0.0055,
+        0.079824
+      ],
+      "isBase": false
     },
     "satelite_gear_v1": {
       "id": "satelite_gear_v1",
@@ -92,7 +110,13 @@
         0.014,
         0.01
       ],
-      "color": "#8C9488"
+      "color": "#8C9488",
+      "layoutPosition": [
+        -0.023794,
+        0.005,
+        0.157864
+      ],
+      "isBase": false
     },
     "satelite_gear_v1_2": {
       "id": "satelite_gear_v1_2",
@@ -115,7 +139,13 @@
         0.014001051,
         0.010001051
       ],
-      "color": "#C0B8B0"
+      "color": "#C0B8B0",
+      "layoutPosition": [
+        -0.069269,
+        0.005001,
+        0.143838
+      ],
+      "isBase": false
     },
     "satelite_gear_v1_3": {
       "id": "satelite_gear_v1_3",
@@ -138,7 +168,13 @@
         0.014001051,
         0.010001051
       ],
-      "color": "#B0AEA8"
+      "color": "#B0AEA8",
+      "layoutPosition": [
+        -0.108588,
+        0.005001,
+        0.11703
+      ],
+      "isBase": false
     },
     "satelite_gear_v1_4": {
       "id": "satelite_gear_v1_4",
@@ -161,7 +197,13 @@
         0.014001051,
         0.010001051
       ],
-      "color": "#8A8884"
+      "color": "#8A8884",
+      "layoutPosition": [
+        -0.138259,
+        0.005001,
+        0.079824
+      ],
+      "isBase": false
     },
     "satellite_base_v1": {
       "id": "satellite_base_v1",
@@ -184,7 +226,13 @@
         0.043057197000000005,
         0.004
       ],
-      "color": "#B8B0A0"
+      "color": "#B8B0A0",
+      "layoutPosition": [
+        0.108588,
+        0.002,
+        0.11703
+      ],
+      "isBase": false
     },
     "sun_gear_v1": {
       "id": "sun_gear_v1",
@@ -205,7 +253,13 @@
       "dimensions": [
         0.0135
       ],
-      "color": "#9CABA3"
+      "color": "#9CABA3",
+      "layoutPosition": [
+        0.023794,
+        0.00675,
+        0.157864
+      ],
+      "isBase": false
     }
   },
   "steps": {
@@ -219,13 +273,7 @@
       "handler": "primitive",
       "primitiveType": "place",
       "primitiveParams": {
-        "target_pose": [
-          -0.003,
-          0.0002,
-          -0.0023
-        ],
-        "approach_height": 0.05,
-        "release_force": 0.2
+        "part_id": "ring_gear_v1"
       },
       "policyId": null,
       "successCriteria": {
@@ -248,9 +296,7 @@
       "handler": "primitive",
       "primitiveType": "pick",
       "primitiveParams": {
-        "part_id": "satellite_top_v1",
-        "grasp_index": 0,
-        "approach_height": 0.05
+        "part_id": "satellite_top_v1"
       },
       "policyId": null,
       "successCriteria": {
@@ -274,13 +320,7 @@
       "handler": "primitive",
       "primitiveType": "place",
       "primitiveParams": {
-        "target_pose": [
-          -0.053,
-          0.0502,
-          0.0427
-        ],
-        "approach_height": 0.05,
-        "release_force": 0.2
+        "part_id": "satellite_top_v1"
       },
       "policyId": null,
       "successCriteria": {
@@ -303,9 +343,7 @@
       "handler": "primitive",
       "primitiveType": "pick",
       "primitiveParams": {
-        "part_id": "6708_bearing_v1",
-        "grasp_index": 0,
-        "approach_height": 0.05
+        "part_id": "6708_bearing_v1"
       },
       "policyId": null,
       "successCriteria": {
@@ -321,30 +359,15 @@
       "name": "Assemble 6708_bearing_v1",
       "partIds": [
         "6708_bearing_v1",
-        "sun_gear_v1",
-        "ring_gear_v1"
+        "ring_gear_v1",
+        "sun_gear_v1"
       ],
       "dependencies": [
         "step_004"
       ],
-      "handler": "primitive",
-      "primitiveType": "linear_insert",
-      "primitiveParams": {
-        "target_pose": [
-          -0.028,
-          -0.0248,
-          0.0497
-        ],
-        "force_limit": 10,
-        "compliance_axes": [
-          0,
-          0,
-          1,
-          0,
-          0,
-          0
-        ]
-      },
+      "handler": "policy",
+      "primitiveType": null,
+      "primitiveParams": null,
       "policyId": null,
       "successCriteria": {
         "type": "force_signature",
@@ -366,9 +389,7 @@
       "handler": "primitive",
       "primitiveType": "pick",
       "primitiveParams": {
-        "part_id": "sun_gear_v1",
-        "grasp_index": 0,
-        "approach_height": 0.05
+        "part_id": "sun_gear_v1"
       },
       "policyId": null,
       "successCriteria": {
@@ -385,9 +406,9 @@
       "partIds": [
         "sun_gear_v1",
         "satelite_gear_v1",
+        "satelite_gear_v1_4",
         "6708_bearing_v1",
         "satelite_gear_v1_3",
-        "satelite_gear_v1_4",
         "satelite_gear_v1_2"
       ],
       "dependencies": [
@@ -417,9 +438,7 @@
       "handler": "primitive",
       "primitiveType": "pick",
       "primitiveParams": {
-        "part_id": "satellite_base_v1",
-        "grasp_index": 0,
-        "approach_height": 0.05
+        "part_id": "satellite_base_v1"
       },
       "policyId": null,
       "successCriteria": {
@@ -443,13 +462,7 @@
       "handler": "primitive",
       "primitiveType": "place",
       "primitiveParams": {
-        "target_pose": [
-          -0.0292,
-          0.0627,
-          0.0277
-        ],
-        "approach_height": 0.05,
-        "release_force": 0.2
+        "part_id": "satellite_base_v1"
       },
       "policyId": null,
       "successCriteria": {
@@ -472,9 +485,7 @@
       "handler": "primitive",
       "primitiveType": "pick",
       "primitiveParams": {
-        "part_id": "satelite_gear_v1_2",
-        "grasp_index": 0,
-        "approach_height": 0.05
+        "part_id": "satelite_gear_v1_2"
       },
       "policyId": null,
       "successCriteria": {
@@ -490,8 +501,8 @@
       "name": "Assemble satelite_gear_v1_2",
       "partIds": [
         "satelite_gear_v1_2",
-        "sun_gear_v1",
-        "ring_gear_v1"
+        "ring_gear_v1",
+        "sun_gear_v1"
       ],
       "dependencies": [
         "step_010"
@@ -520,9 +531,7 @@
       "handler": "primitive",
       "primitiveType": "pick",
       "primitiveParams": {
-        "part_id": "satelite_gear_v1_3",
-        "grasp_index": 0,
-        "approach_height": 0.05
+        "part_id": "satelite_gear_v1_3"
       },
       "policyId": null,
       "successCriteria": {
@@ -538,8 +547,8 @@
       "name": "Assemble satelite_gear_v1_3",
       "partIds": [
         "satelite_gear_v1_3",
-        "sun_gear_v1",
-        "ring_gear_v1"
+        "ring_gear_v1",
+        "sun_gear_v1"
       ],
       "dependencies": [
         "step_012"
@@ -568,9 +577,7 @@
       "handler": "primitive",
       "primitiveType": "pick",
       "primitiveParams": {
-        "part_id": "satelite_gear_v1_4",
-        "grasp_index": 0,
-        "approach_height": 0.05
+        "part_id": "satelite_gear_v1_4"
       },
       "policyId": null,
       "successCriteria": {
@@ -586,8 +593,8 @@
       "name": "Assemble satelite_gear_v1_4",
       "partIds": [
         "satelite_gear_v1_4",
-        "sun_gear_v1",
-        "ring_gear_v1"
+        "ring_gear_v1",
+        "sun_gear_v1"
       ],
       "dependencies": [
         "step_014"
@@ -616,9 +623,7 @@
       "handler": "primitive",
       "primitiveType": "pick",
       "primitiveParams": {
-        "part_id": "satelite_gear_v1",
-        "grasp_index": 0,
-        "approach_height": 0.05
+        "part_id": "satelite_gear_v1"
       },
       "policyId": null,
       "successCriteria": {
@@ -634,8 +639,8 @@
       "name": "Assemble satelite_gear_v1",
       "partIds": [
         "satelite_gear_v1",
-        "sun_gear_v1",
-        "ring_gear_v1"
+        "ring_gear_v1",
+        "sun_gear_v1"
       ],
       "dependencies": [
         "step_016"
