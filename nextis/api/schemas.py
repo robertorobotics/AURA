@@ -278,3 +278,20 @@ class RLTrainingState(BaseModel):
     critic_loss: float = Field(0.0, alias="criticLoss")
     actor_loss: float = Field(0.0, alias="actorLoss")
     buffer_size: int = Field(0, alias="bufferSize")
+
+
+# ------------------------------------------------------------------
+# Upload progress schemas
+# ------------------------------------------------------------------
+
+
+class UploadProgressEvent(BaseModel):
+    """A single progress event emitted during STEP upload processing."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: str  # "progress" | "complete" | "error"
+    stage: str | None = None
+    detail: str | None = None
+    progress: float | None = None
+    assembly: dict[str, Any] | None = None

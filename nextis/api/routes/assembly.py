@@ -6,15 +6,18 @@ STEP file uploads are parsed into assemblies via CADParser.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import json
 import logging
+import queue as queue_mod
 import shutil
 import tempfile
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 
 from nextis.api.schemas import AssemblySummary, PlanAnalysisResponse, PlanSuggestionResponse
 from nextis.assembly.models import AssemblyGraph
@@ -174,19 +177,16 @@ async def delete_assembly(assembly_id: str) -> dict[str, str]:
     return {"status": "deleted", "id": assembly_id}
 
 
-@router.post("/upload", status_code=201)
-async def upload_step_file(file: UploadFile = File(...)) -> dict[str, Any]:  # noqa: B008
-    """Parse a STEP file and create an assembly with GLB meshes.
+@router.post("/upload", status_code=200)
+async def upload_step_file(file: UploadFile = File(...)):  # noqa: B008
+    """Parse a STEP file and stream progress as NDJSON.
 
-    Accepts a multipart form upload of a .step/.stp file. Parses geometry,
-    generates GLB meshes, plans an initial assembly sequence, and returns
-    the full AssemblyGraph.
+    Accepts a multipart form upload of a .step/.stp file. Streams progress
+    events as newline-delimited JSON, ending with a ``complete`` event that
+    contains the full AssemblyGraph or an ``error`` event on failure.
 
     Args:
         file: Uploaded STEP file (.step or .stp).
-
-    Returns:
-        Full assembly graph with camelCase keys.
     """
     if not HAS_PARSER:
         raise HTTPException(
@@ -206,34 +206,75 @@ async def upload_step_file(file: UploadFile = File(...)) -> dict[str, Any]:  # n
     with open(tmp_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    try:
-        parser = CADParser()
-        mesh_dir = MESHES_DIR / tmp_path.stem.lower().replace(" ", "_").replace("-", "_")
+    progress_queue: queue_mod.SimpleQueue = queue_mod.SimpleQueue()
 
-        parse_result = parser.parse(tmp_path, mesh_dir, assembly_name=tmp_path.stem)
+    def run_pipeline() -> None:
+        """Synchronous pipeline — runs in thread pool."""
 
-        planner = SequencePlanner()
-        graph = planner.plan(parse_result)
+        def emit(progress: float, stage: str, detail: str) -> None:
+            progress_queue.put(
+                {
+                    "type": "progress",
+                    "stage": stage,
+                    "detail": detail,
+                    "progress": round(progress, 3),
+                }
+            )
 
-        # Auto-assign handlers based on primitive_type
-        from nextis.assembly.sequence_planner import assign_handlers
+        try:
+            parser = CADParser()
+            mesh_dir = MESHES_DIR / tmp_path.stem.lower().replace(" ", "_").replace("-", "_")
 
-        graph = assign_handlers(graph)
+            emit(0.01, "reading", f"Uploading {filename}...")
+            parse_result = parser.parse(
+                tmp_path,
+                mesh_dir,
+                assembly_name=tmp_path.stem,
+                on_progress=emit,
+            )
 
-        json_path = CONFIGS_DIR / f"{graph.id}.json"
-        graph.to_json_file(json_path)
-        logger.info("Created assembly '%s' from uploaded STEP file", graph.id)
-        return graph.model_dump(by_alias=True)
+            emit(0.88, "planning", "Planning assembly sequence...")
+            planner = SequencePlanner()
+            graph = planner.plan(parse_result)
 
-    except HTTPException:
-        raise
-    except CADParseError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
-    except Exception as e:
-        logger.error("STEP upload failed: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal parsing error") from e
-    finally:
-        shutil.rmtree(tmp_dir, ignore_errors=True)
+            from nextis.assembly.sequence_planner import assign_handlers
+
+            graph = assign_handlers(graph)
+
+            emit(0.95, "saving", "Saving assembly...")
+            json_path = CONFIGS_DIR / f"{graph.id}.json"
+            graph.to_json_file(json_path)
+            logger.info("Created assembly '%s' from uploaded STEP file", graph.id)
+
+            result = graph.model_dump(by_alias=True)
+            progress_queue.put({"type": "complete", "assembly": result})
+
+        except CADParseError as e:
+            progress_queue.put({"type": "error", "detail": str(e)})
+        except Exception as e:
+            logger.error("STEP upload failed: %s", e, exc_info=True)
+            progress_queue.put({"type": "error", "detail": "Internal parsing error"})
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    async def event_stream():
+        """Async generator yielding NDJSON lines from the progress queue."""
+        loop = asyncio.get_event_loop()
+        task = loop.run_in_executor(None, run_pipeline)
+        while True:
+            try:
+                msg = await asyncio.to_thread(progress_queue.get, timeout=0.15)
+            except Exception:
+                # queue.get timed out — check if pipeline thread finished
+                if task.done():
+                    break
+                continue
+            yield json.dumps(msg, separators=(",", ":")) + "\n"
+            if msg["type"] in ("complete", "error"):
+                break
+        await task  # ensure thread cleanup
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 
 
 @router.post("/{assembly_id}/analyze", response_model=PlanAnalysisResponse)

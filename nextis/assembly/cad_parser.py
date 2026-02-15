@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,9 @@ from nextis.assembly.models import AssemblyGraph, Part
 from nextis.errors import CADParseError
 
 logger = logging.getLogger(__name__)
+
+# Callback type for reporting parse progress: (progress_fraction, stage, detail_message)
+ProgressCallback = Callable[[float, str, str], None]
 
 # ---------------------------------------------------------------------------
 # Optional OCC imports — try OCP (pip) first, then OCC.Core (conda)
@@ -185,6 +189,7 @@ class CADParser:
         step_file: Path,
         output_dir: Path,
         assembly_name: str | None = None,
+        on_progress: ProgressCallback | None = None,
     ) -> ParseResult:
         """Parse a STEP file into an AssemblyGraph with GLB meshes.
 
@@ -208,6 +213,8 @@ class CADParser:
             raise CADParseError(f"Expected .step/.stp file, got {step_file.suffix}")
 
         logger.info("Parsing STEP file: %s", step_file)
+        if on_progress:
+            on_progress(0.02, "reading", f"Reading {step_file.name}...")
 
         # Try XDE first, fall back to flat
         raw_parts = self._extract_parts_xde(step_file)
@@ -218,6 +225,8 @@ class CADParser:
             raise CADParseError(f"No geometry found in {step_file.name}")
 
         logger.info("Extracted %d part(s) from %s", len(raw_parts), step_file.name)
+        if on_progress:
+            on_progress(0.08, "extracting", f"Extracted {len(raw_parts)} parts")
 
         # Assign unique IDs
         seen_ids: set[str] = set()
@@ -238,23 +247,30 @@ class CADParser:
 
         # Process each part (tessellate + create Part, all in metres)
         parts: dict[str, Part] = {}
+        n = len(raw_parts)
         for i, rp in enumerate(raw_parts):
-            part = self._process_part(
-                rp, i, assembly_id, output_dir, unit_scale=unit_scale
-            )
+            if on_progress:
+                on_progress(
+                    0.10 + 0.65 * (i / max(n, 1)),
+                    "tessellating",
+                    f"Meshing {rp.part_id} ({i + 1}/{n})",
+                )
+            part = self._process_part(rp, i, assembly_id, output_dir, unit_scale=unit_scale)
             parts[part.id] = part
 
         # Detect contacts (operates on raw OCC shapes, unaffected by scaling)
+        if on_progress:
+            on_progress(0.75, "contacts", f"Detecting contacts ({n * (n - 1) // 2} pairs)...")
         contacts = self._detect_contacts(raw_parts)
 
-        graph = AssemblyGraph(
-            id=assembly_id, name=name, parts=parts, unit_scale=unit_scale
-        )
+        graph = AssemblyGraph(id=assembly_id, name=name, parts=parts, unit_scale=unit_scale)
 
         # Compute initial layout positions (step_order not yet available)
         from nextis.assembly.layout import compute_layout_positions
 
         compute_layout_positions(graph)
+        if on_progress:
+            on_progress(0.90, "layout", "Layout positions computed")
 
         logger.info(
             "Built assembly graph '%s': %d parts, %d contacts, units=%s",
@@ -263,9 +279,7 @@ class CADParser:
             len(contacts),
             units,
         )
-        return ParseResult(
-            graph=graph, contacts=contacts, units=units, unit_scale=unit_scale
-        )
+        return ParseResult(graph=graph, contacts=contacts, units=units, unit_scale=unit_scale)
 
     # ------------------------------------------------------------------
     # XDE reader (preserves assembly hierarchy and part names)
@@ -347,9 +361,7 @@ class CADParser:
         # Resolve references.
         ref_label = TDF_Label()
         actual_label = (
-            ref_label
-            if _st_call(shape_tool, "GetReferredShape", label, ref_label)
-            else label
+            ref_label if _st_call(shape_tool, "GetReferredShape", label, ref_label) else label
         )
 
         # Reference to a sub-assembly: recurse into its components.
@@ -448,9 +460,7 @@ class CADParser:
                 pass
 
         if max_coord > 1.0:
-            logger.info(
-                "Detected mm coordinates (max=%.1f), scaling to metres", max_coord
-            )
+            logger.info("Detected mm coordinates (max=%.1f), scaling to metres", max_coord)
             return "mm", 0.001
 
         logger.info("Detected metre coordinates (max=%.4f)", max_coord)
