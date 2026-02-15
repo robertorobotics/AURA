@@ -98,7 +98,7 @@ export const DOCS_CONTENT: DocSection[] = [
             language: "bash",
             content: `conda activate nextis
 pip install -e ".[dev]"
-python scripts/demo.py`,
+python scripts/run_api.py`,
           },
           { type: "heading", level: 3, text: "Frontend (separate terminal)" },
           {
@@ -124,9 +124,9 @@ npm run dev`,
             headers: ["Key", "Action"],
             rows: [
               ["Space", "Play / Pause assembly"],
-              ["Escape", "Stop execution"],
+              ["Escape", "Stop execution / exit teaching"],
               ["↑ / ↓", "Navigate steps"],
-              ["← / →", "Previous / Next step"],
+              ["T", "Toggle teleoperation"],
             ],
           },
         ],
@@ -172,6 +172,14 @@ pip install -e ".[dev]"`,
             language: "bash",
             content: `cd frontend
 npm install`,
+          },
+          { type: "heading", level: 3, text: "Environment Variables" },
+          {
+            type: "table",
+            headers: ["Variable", "Default", "Description"],
+            rows: [
+              ["NEXT_PUBLIC_API_URL", "http://localhost:8000", "Backend API base URL"],
+            ],
           },
           {
             type: "callout",
@@ -430,6 +438,7 @@ curl -X POST http://localhost:8000/training/step/step_001/train \\
               ["GET", "/assemblies", "List all assemblies (id + name)"],
               ["GET", "/assemblies/{id}", "Full assembly graph"],
               ["POST", "/assemblies", "Create assembly from JSON body"],
+              ["PATCH", "/assemblies/{id}", "Update assembly metadata (name)"],
               ["PATCH", "/assemblies/{id}/steps/{step_id}", "Partially update a step"],
               ["DELETE", "/assemblies/{id}", "Delete assembly and meshes"],
               ["POST", "/assemblies/upload", "Upload .step/.stp \u2192 parse \u2192 assembly"],
@@ -512,8 +521,9 @@ curl -X POST http://localhost:8000/training/step/step_001/train \\
       },
       {
         id: "api-training",
-        title: "Training (/training)",
+        title: "Training (/training, /rl)",
         blocks: [
+          { type: "heading", level: 3, text: "Behavioral Cloning" },
           {
             type: "table",
             headers: ["Method", "Path", "Description"],
@@ -527,7 +537,27 @@ curl -X POST http://localhost:8000/training/step/step_001/train \\
             type: "callout",
             variant: "warning",
             content:
-              "Training routes are currently stubbed. The API accepts requests and tracks job state in memory, but does not execute actual model training.",
+              "BC training routes are currently stubbed. The API accepts requests and tracks job state in memory, but does not execute actual model training.",
+          },
+          { type: "heading", level: 3, text: "RL Fine-tuning" },
+          {
+            type: "table",
+            headers: ["Method", "Path", "Description"],
+            rows: [
+              ["POST", "/rl/step/{step_id}/start", "Start RL fine-tuning (body: assemblyId, maxEpisodes, movementScale)"],
+              ["POST", "/rl/step/{step_id}/stop", "Stop fine-tuning, save checkpoint"],
+              ["GET", "/rl/status", "Current RL training state (episode, successRate, losses)"],
+              ["GET", "/rl/step/{step_id}/policy", "Check if RL checkpoint exists (query: assembly_id)"],
+            ],
+          },
+          {
+            type: "paragraph",
+            content: [
+              "RL fine-tuning uses SAC (Soft Actor-Critic) with HIL-SERL — human interventions during rollout are detected and stored with priority in the replay buffer. ",
+              "Checkpoints are saved to ",
+              { text: "data/policies/{assembly_id}/{step_id}/policy_rl.pt", code: true },
+              ".",
+            ],
           },
         ],
       },

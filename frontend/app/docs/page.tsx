@@ -17,7 +17,7 @@ function renderRun(run: TextRun) {
   let node: React.ReactNode = run.text;
   if (run.code) {
     node = (
-      <code className="rounded bg-bg-secondary px-1.5 py-0.5 font-mono text-[12px] text-accent">
+      <code className="rounded bg-bg-secondary px-1.5 py-0.5 font-mono text-[13px] text-accent">
         {run.text}
       </code>
     );
@@ -63,14 +63,14 @@ function BlockRenderer({ block }: { block: ContentBlock }) {
   switch (block.type) {
     case "paragraph":
       return (
-        <p className="text-[14px] leading-relaxed text-text-secondary">
+        <p className="text-[14px] leading-[1.7] text-text-secondary">
           <RichTextRenderer content={block.content} />
         </p>
       );
 
     case "code":
       return (
-        <pre className="overflow-x-auto rounded-lg bg-text-primary p-4 font-mono text-[13px] leading-relaxed text-bg-primary">
+        <pre className="overflow-x-auto rounded-lg bg-text-primary p-4 font-mono text-[13px] leading-relaxed text-green-300">
           <code>{block.content}</code>
         </pre>
       );
@@ -84,7 +84,7 @@ function BlockRenderer({ block }: { block: ContentBlock }) {
                 {block.headers.map((h) => (
                   <th
                     key={h}
-                    className="border-b border-bg-tertiary px-3 py-2 text-left font-semibold text-text-primary"
+                    className="border-b border-bg-tertiary bg-bg-secondary px-3 py-2 text-left font-semibold text-text-primary"
                   >
                     {h}
                   </th>
@@ -175,7 +175,7 @@ function Sidebar({
 
       {sections.map((section) => (
         <div key={section.id} className="mb-4">
-          <p className="px-5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+          <p className="mt-5 px-5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
             {section.title}
           </p>
           <div className="flex flex-col">
@@ -188,7 +188,7 @@ function Sidebar({
                   className={`px-5 py-1.5 text-left text-[13px] transition-colors ${
                     isActive
                       ? "border-l-[2px] border-l-accent bg-accent-light font-semibold text-text-primary"
-                      : "border-l-[2px] border-l-transparent text-text-secondary hover:text-text-primary"
+                      : "border-l-[2px] border-l-transparent text-text-secondary hover:bg-bg-secondary hover:text-text-primary"
                   }`}
                 >
                   {sub.title}
@@ -250,7 +250,7 @@ export default function DocsPage() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-bg-primary">
+    <>
       {/* Sidebar */}
       <Sidebar
         sections={DOCS_CONTENT}
@@ -286,7 +286,7 @@ export default function DocsPage() {
                 >
                   <h2
                     id={sub.id}
-                    className="scroll-mt-20 text-[20px] font-semibold text-text-primary"
+                    className="mb-4 scroll-mt-20 text-[22px] font-bold text-text-primary"
                   >
                     {sub.title}
                   </h2>
@@ -325,6 +325,6 @@ export default function DocsPage() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
