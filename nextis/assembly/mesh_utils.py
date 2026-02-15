@@ -71,16 +71,18 @@ def _static(cls: Any, method: str) -> Any:
 # Colour palette for parts
 # ---------------------------------------------------------------------------
 _PART_COLORS = [
-    "#B0AEA8",
-    "#8A8884",
-    "#D4D3CF",
-    "#7A7974",
-    "#C4A882",
-    "#9CABA3",
-    "#A89080",
-    "#B8B0A0",
-    "#8C9488",
-    "#C0B8B0",
+    "#5B8DB8",  # Steel blue
+    "#8B6E50",  # Warm bronze
+    "#6B9B7B",  # Sage green
+    "#9B7B8B",  # Dusty mauve
+    "#B8955B",  # Antique gold
+    "#5B8B8B",  # Teal grey
+    "#8B7B5B",  # Olive khaki
+    "#7B6B9B",  # Muted purple
+    "#9B8B6B",  # Sand
+    "#5B7B6B",  # Forest grey
+    "#8B6B6B",  # Rosewood
+    "#6B8B5B",  # Moss green
 ]
 
 
@@ -331,6 +333,7 @@ def tessellate_to_glb(
     output_path: Path,
     linear_deflection: float = 0.001,
     unit_scale: float = 1.0,
+    color: str | None = None,
 ) -> tuple[bool, list[float]]:
     """Tessellate an OCC shape and export as GLB via trimesh.
 
@@ -345,6 +348,7 @@ def tessellate_to_glb(
         linear_deflection: Mesh density (metres). Lower = finer.
         unit_scale: Factor to convert source coordinates to metres.
             1.0 for files already in metres, 0.001 for files in mm.
+        color: Optional hex colour (e.g. "#B0AEA8") to embed as PBR material.
 
     Returns:
         Tuple of (success, bbox_center_xyz).  bbox_center_xyz is the
@@ -443,8 +447,23 @@ def tessellate_to_glb(
             *bbox_max,
         )
 
-        mesh = trimesh.Trimesh(vertices=verts, faces=faces)
+        mesh = trimesh.Trimesh(vertices=verts, faces=faces, process=True)
         trimesh.repair.fix_normals(mesh)
+        # TODO: crease-angle vertex splitting (>30° dihedral) for sharp-edge normals.
+        # trimesh lacks built-in support; would need manual face-adjacency grouping.
+
+        # Embed PBR material with per-part colour
+        if color and len(color) == 7 and color.startswith("#"):
+            r = int(color[1:3], 16) / 255
+            g = int(color[3:5], 16) / 255
+            b = int(color[5:7], 16) / 255
+            material = trimesh.visual.material.PBRMaterial(
+                baseColorFactor=[r, g, b, 1.0],
+                metallicFactor=0.15,
+                roughnessFactor=0.45,
+            )
+            mesh.visual = trimesh.visual.TextureVisuals(material=material)
+
         mesh.export(str(output_path), file_type="glb")
         logger.debug(
             "Exported GLB: %s (%d verts, %d faces, watertight=%s)",

@@ -42,6 +42,7 @@ try:
     from OCP.BRepExtrema import BRepExtrema_DistShapeShape
     from OCP.gp import gp_Trsf
     from OCP.IFSelect import IFSelect_RetDone
+    from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB
     from OCP.STEPCAFControl import STEPCAFControl_Reader
     from OCP.STEPControl import STEPControl_Reader
     from OCP.TCollection import TCollection_ExtendedString
@@ -52,7 +53,7 @@ try:
     from OCP.TopExp import TopExp_Explorer
     from OCP.TopLoc import TopLoc_Location
     from OCP.XCAFApp import XCAFApp_Application
-    from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ShapeTool
+    from OCP.XCAFDoc import XCAFDoc_ColorTool, XCAFDoc_DocumentTool, XCAFDoc_ShapeTool
 
     HAS_OCC = True
 except ImportError:
@@ -60,6 +61,7 @@ except ImportError:
         from OCC.Core.BRepExtrema import BRepExtrema_DistShapeShape
         from OCC.Core.gp import gp_Trsf
         from OCC.Core.IFSelect import IFSelect_RetDone
+        from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
         from OCC.Core.STEPCAFControl import STEPCAFControl_Reader
         from OCC.Core.STEPControl import STEPControl_Reader
         from OCC.Core.TCollection import TCollection_ExtendedString
@@ -70,13 +72,16 @@ except ImportError:
         from OCC.Core.TopExp import TopExp_Explorer
         from OCC.Core.TopLoc import TopLoc_Location
         from OCC.Core.XCAFApp import XCAFApp_Application
-        from OCC.Core.XCAFDoc import XCAFDoc_DocumentTool
+        from OCC.Core.XCAFDoc import XCAFDoc_ColorTool, XCAFDoc_DocumentTool
 
         XCAFDoc_ShapeTool = None  # pythonocc uses instance methods
         HAS_OCC = True
     except ImportError:
         HAS_OCC = False
         XCAFDoc_ShapeTool = None  # type: ignore[assignment]
+        XCAFDoc_ColorTool = None  # type: ignore[assignment]
+        Quantity_Color = None  # type: ignore[assignment]
+        Quantity_TOC_RGB = None  # type: ignore[assignment]
         gp_Trsf = None  # type: ignore[assignment,misc]
         TopLoc_Location = None  # type: ignore[assignment,misc]
 
@@ -112,6 +117,7 @@ class _RawPart:
     part_id: str = ""
     position: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])
     rotation: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])
+    color: str | None = None
 
 
 @dataclass
@@ -304,13 +310,14 @@ class CADParser:
                 return []
 
             shape_tool = _static(XCAFDoc_DocumentTool, "ShapeTool")(doc.Main())
+            color_tool = _static(XCAFDoc_DocumentTool, "ColorTool")(doc.Main())
             labels = TDF_LabelSequence()
             shape_tool.GetFreeShapes(labels)
 
             raw_parts: list[_RawPart] = []
             for i in range(labels.Length()):
                 label = labels.Value(i + 1)
-                self._walk_label(shape_tool, label, raw_parts)
+                self._walk_label(shape_tool, label, raw_parts, color_tool=color_tool)
 
             return raw_parts
         except Exception as exc:
@@ -323,6 +330,8 @@ class CADParser:
         label: Any,
         out: list[_RawPart],
         parent_trsf: Any | None = None,
+        *,
+        color_tool: Any | None = None,
     ) -> None:
         """Recursively walk a TDF_Label tree, collecting leaf shapes.
 
@@ -336,6 +345,7 @@ class CADParser:
             out: Accumulator list for discovered parts.
             parent_trsf: Composed gp_Trsf from all ancestor labels.
                 None means identity (top-level call).
+            color_tool: Optional XDE ColorTool for STEP color extraction.
         """
         if parent_trsf is None:
             parent_trsf = gp_Trsf()
@@ -356,7 +366,10 @@ class CADParser:
             components = TDF_LabelSequence()
             _st_call(shape_tool, "GetComponents", label, components)
             for i in range(components.Length()):
-                self._walk_label(shape_tool, components.Value(i + 1), out, composed)
+                self._walk_label(
+                    shape_tool, components.Value(i + 1), out, composed,
+                    color_tool=color_tool,
+                )
             return
 
         # Resolve references.
@@ -370,7 +383,10 @@ class CADParser:
             components = TDF_LabelSequence()
             _st_call(shape_tool, "GetComponents", actual_label, components)
             for i in range(components.Length()):
-                self._walk_label(shape_tool, components.Value(i + 1), out, composed)
+                self._walk_label(
+                    shape_tool, components.Value(i + 1), out, composed,
+                    color_tool=color_tool,
+                )
             return
 
         # Leaf: apply composed global transform to definition shape.
@@ -382,12 +398,17 @@ class CADParser:
         name = self._get_label_name(actual_label) or f"Part_{len(out) + 1}"
         pos, rot = trsf_to_pos_rot(composed)
 
+        color = self._get_label_color(color_tool, actual_label)
+        if color:
+            logger.info("Extracted color %s for %s", color, name)
+
         out.append(
             _RawPart(
                 name=name,
                 shape=located_shape,
                 position=pos,
                 rotation=rot,
+                color=color,
             )
         )
 
@@ -398,6 +419,23 @@ class CADParser:
             name_attr = TDataStd_Name()
             if label.FindAttribute(_static(TDataStd_Name, "GetID")(), name_attr):
                 return name_attr.Get().ToExtString()
+        except Exception:
+            pass
+        return None
+
+    @staticmethod
+    def _get_label_color(color_tool: Any, label: Any) -> str | None:
+        """Extract hex color from a TDF_Label via the XDE color tool."""
+        if color_tool is None or Quantity_Color is None:
+            return None
+        try:
+            c = Quantity_Color()
+            for color_type in (0, 1, 2):  # surface, curve, generic
+                if _st_call(color_tool, "GetColor", label, color_type, c):
+                    r = int(c.Red() * 255)
+                    g = int(c.Green() * 255)
+                    b = int(c.Blue() * 255)
+                    return f"#{r:02X}{g:02X}{b:02X}"
         except Exception:
             pass
         return None
@@ -491,7 +529,7 @@ class CADParser:
         layout_rot = compute_resting_rotation(rp.shape)
 
         geo_type, dims = classify_geometry(extents[0], extents[1], extents[2])
-        color = color_for_part(rp.name, index)
+        color = rp.color or color_for_part(rp.name, index)
 
         # Tessellate the LOCATED shape. The returned bbox center is the mesh's
         # geometric center in assembly coordinates — this IS the correct
@@ -500,7 +538,8 @@ class CADParser:
         mesh_path = output_dir / f"{rp.part_id}.glb"
         mesh_file: str | None = None
         success, mesh_bbox_center = tessellate_to_glb(
-            rp.shape, mesh_path, self._linear_deflection, unit_scale=unit_scale
+            rp.shape, mesh_path, self._linear_deflection,
+            unit_scale=unit_scale, color=color,
         )
         if success:
             # Append timestamp to bust drei/browser GLB cache on re-upload
