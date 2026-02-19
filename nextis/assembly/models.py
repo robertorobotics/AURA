@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+from enum import Enum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -25,6 +26,55 @@ class GraspPoint(BaseModel):
     approach: list[float]
 
 
+class ContactType(str, Enum):  # noqa: UP042
+    """Classification of the geometric relationship between two contacting parts."""
+
+    COAXIAL = "coaxial"
+    PLANAR = "planar"
+    POINT = "point"
+    LINE = "line"
+    COMPLEX = "complex"
+
+
+class ContactInfo(BaseModel):
+    """Geometric description of a contact between two assembly parts.
+
+    Provides geometric details about the contact relationship including
+    closest points, surface normal, contact type classification, and
+    derived insertion axis. Used by the sequence planner for handler
+    selection and by the AI planner for spatial reasoning.
+
+    Attributes:
+        part_a: ID of the first part (lexicographically smaller).
+        part_b: ID of the second part.
+        distance: Minimum distance between shapes (metres). 0.0 = touching.
+        normal: Unit normal vector [x, y, z] from part_a toward part_b.
+        contact_point_a: Closest point on part_a [x, y, z] in metres.
+        contact_point_b: Closest point on part_b [x, y, z] in metres.
+        contact_type: Classification of the contact geometry.
+        insertion_axis: Estimated insertion direction [x, y, z], or None.
+        clearance_mm: Estimated radial clearance in mm (coaxial), or None.
+        area_class: "large" (>100mm2), "medium" (10-100mm2), "small", or None.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    part_a: str = Field(alias="partA")
+    part_b: str = Field(alias="partB")
+    distance: float = 0.0
+    normal: list[float] = Field(default_factory=lambda: [0.0, 1.0, 0.0])
+    contact_point_a: list[float] = Field(
+        default_factory=lambda: [0.0, 0.0, 0.0], alias="contactPointA"
+    )
+    contact_point_b: list[float] = Field(
+        default_factory=lambda: [0.0, 0.0, 0.0], alias="contactPointB"
+    )
+    contact_type: ContactType = Field(ContactType.COMPLEX, alias="contactType")
+    insertion_axis: list[float] | None = Field(None, alias="insertionAxis")
+    clearance_mm: float | None = Field(None, alias="clearanceMm")
+    area_class: str | None = Field(None, alias="areaClass")
+
+
 class Part(BaseModel):
     """A physical part in an assembly.
 
@@ -35,8 +85,13 @@ class Part(BaseModel):
         grasp_points: List of grasp pose definitions.
         position: [x, y, z] assembled position in metres.
         rotation: [rx, ry, rz] euler angles in radians.
-        geometry: Placeholder shape — "box", "cylinder", or "sphere".
-        dimensions: Shape-specific dims (box=[w,h,d], cylinder=[r,h], sphere=[r]).
+        geometry: Placeholder shape — "box", "cylinder", "sphere", "disc", or "plate".
+        dimensions: Shape-specific dims (box=[w,h,d], cylinder=[r,h], sphere=[r],
+            disc=[r,h], plate=[l,w,t]).
+        shape_class: Face-analysis classification — "shaft", "housing", "gear_like",
+            "plate", "block", or "complex". None if analysis was not performed.
+        face_stats: Percentage of total surface area by face type (e.g.
+            {"cylindrical": 65.2, "planar": 30.1}). None if not computed.
         color: Hex colour string for placeholder rendering.
         layout_position: [x, y, z] pre-assembly tray position in metres, or None.
         is_base: Whether this part is the base/fixture that stays centered.
@@ -52,6 +107,8 @@ class Part(BaseModel):
     rotation: list[float] | None = None
     geometry: str | None = None
     dimensions: list[float] | None = None
+    shape_class: str | None = Field(None, alias="shapeClass")
+    face_stats: dict[str, float] | None = Field(None, alias="faceStats")
     color: str | None = None
     layout_position: list[float] | None = Field(None, alias="layoutPosition")
     layout_rotation: list[float] | None = Field(None, alias="layoutRotation")
@@ -119,6 +176,7 @@ class AssemblyGraph(BaseModel):
         parts: Part catalog keyed by part ID.
         steps: Step definitions keyed by step ID.
         step_order: Topologically sorted list of step IDs for execution.
+        contacts: Inter-part contact pairs from CAD analysis.
     """
 
     model_config = ConfigDict(populate_by_name=True)
@@ -129,6 +187,7 @@ class AssemblyGraph(BaseModel):
     steps: dict[str, AssemblyStep] = Field(default_factory=dict)
     step_order: list[str] = Field(default_factory=list, alias="stepOrder")
     unit_scale: float = Field(1.0, alias="unitScale")
+    contacts: list[ContactInfo] = Field(default_factory=list)
 
     @classmethod
     def from_json_file(cls, path: Path) -> AssemblyGraph:

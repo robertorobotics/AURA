@@ -28,7 +28,13 @@ try:
     from OCP.BRepGProp import BRepGProp
     from OCP.BRepLib import BRepLib
     from OCP.BRepMesh import BRepMesh_IncrementalMesh
-    from OCP.GeomAbs import GeomAbs_Plane
+    from OCP.GeomAbs import (
+        GeomAbs_Cone,
+        GeomAbs_Cylinder,
+        GeomAbs_Plane,
+        GeomAbs_Sphere,
+        GeomAbs_Torus,
+    )
     from OCP.gp import gp_Dir
     from OCP.GProp import GProp_GProps
     from OCP.TopAbs import TopAbs_FACE, TopAbs_REVERSED
@@ -46,7 +52,13 @@ except ImportError:
         from OCC.Core.BRepGProp import BRepGProp
         from OCC.Core.BRepLib import BRepLib
         from OCC.Core.BRepMesh import BRepMesh_IncrementalMesh
-        from OCC.Core.GeomAbs import GeomAbs_Plane
+        from OCC.Core.GeomAbs import (
+            GeomAbs_Cone,
+            GeomAbs_Cylinder,
+            GeomAbs_Plane,
+            GeomAbs_Sphere,
+            GeomAbs_Torus,
+        )
         from OCC.Core.gp import gp_Dir
         from OCC.Core.GProp import GProp_GProps
         from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_REVERSED
@@ -70,6 +82,18 @@ except ImportError:
 def _static(cls: Any, method: str) -> Any:
     """Get a static method from an OCC class, trying OCP '_s' suffix first."""
     return getattr(cls, f"{method}_s", None) or getattr(cls, method)
+
+
+# Face type enum → string mapping (populated only when OCC is available)
+_FACE_TYPE_MAP: dict[Any, str] = {}
+if HAS_OCC:
+    _FACE_TYPE_MAP = {
+        GeomAbs_Plane: "planar",
+        GeomAbs_Cylinder: "cylindrical",
+        GeomAbs_Cone: "conical",
+        GeomAbs_Sphere: "spherical",
+        GeomAbs_Torus: "toroidal",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -117,6 +141,9 @@ def classify_geometry(
 ) -> tuple[str, list[float]]:
     """Classify bounding box into placeholder geometry type.
 
+    Distinguishes five shape types based on aspect ratios:
+    sphere, disc, plate, cylinder, and box.
+
     Args:
         dx: Width in metres.
         dy: Height in metres.
@@ -124,22 +151,128 @@ def classify_geometry(
 
     Returns:
         Tuple of (geometry_type, dimensions) for the frontend PartMesh.
+        Dimension formats: sphere=[r], disc=[r,h], plate=[l,w,t],
+        cylinder=[r,h], box=[dx,dy,dz].
     """
     sorted_dims = sorted([dx, dy, dz])
-    ratio = sorted_dims[2] / max(sorted_dims[0], 1e-9)
+    aspect = sorted_dims[2] / max(sorted_dims[0], 1e-9)
+    flatness = sorted_dims[0] / max(sorted_dims[2], 1e-9)
 
-    # Equidimensional → sphere
-    if ratio < 1.3 and sorted_dims[1] / max(sorted_dims[0], 1e-9) < 1.3:
+    # Equidimensional → sphere (all three dims within 30%)
+    if aspect < 1.3 and sorted_dims[1] / max(sorted_dims[0], 1e-9) < 1.3:
         radius = max(dx, dy, dz) / 2
         return "sphere", [radius]
 
-    # One axis much longer, other two similar → cylinder
-    if ratio > 2.0 and sorted_dims[1] / max(sorted_dims[0], 1e-9) < 1.5:
+    # Flat + two large dims similar → disc (gears, washers, flanges, bearings)
+    if flatness < 0.3 and sorted_dims[2] / max(sorted_dims[1], 1e-9) < 1.5:
+        radius = (sorted_dims[1] + sorted_dims[2]) / 4
+        height = sorted_dims[0]
+        return "disc", [radius, height]
+
+    # Flat + two large dims NOT similar → plate (cover plates, brackets, L-shapes)
+    if flatness < 0.2:
+        return "plate", [sorted_dims[2], sorted_dims[1], sorted_dims[0]]
+
+    # Elongated: one dim much longer, other two similar → cylinder
+    if aspect > 2.0 and sorted_dims[1] / max(sorted_dims[0], 1e-9) < 1.5:
         radius = (sorted_dims[0] + sorted_dims[1]) / 4
         height = sorted_dims[2]
         return "cylinder", [radius, height]
 
     return "box", [dx, dy, dz]
+
+
+def classify_shape_from_faces(shape: Any) -> tuple[str, dict[str, float]]:
+    """Classify a shape by analyzing its constituent face types.
+
+    Uses BRepAdaptor_Surface to determine the dominant face type by area.
+    More accurate than bounding-box classification for complex parts.
+
+    Args:
+        shape: OCC TopoDS_Shape to classify.
+
+    Returns:
+        Tuple of (shape_class, face_stats) where shape_class is one of
+        "shaft", "housing", "gear_like", "plate", "block", "complex"
+        and face_stats is a dict of face type → percentage of total area.
+    """
+    if not HAS_OCC or shape is None:
+        return "complex", {}
+
+    try:
+        return _classify_shape_from_faces_impl(shape)
+    except Exception:
+        logger.debug("Face classification failed", exc_info=True)
+        return "complex", {}
+
+
+def _classify_shape_from_faces_impl(shape: Any) -> tuple[str, dict[str, float]]:
+    """Inner implementation of face-based classification (may raise)."""
+    area_by_type: dict[str, float] = {}
+    inner_cyl_area = 0.0
+    outer_cyl_area = 0.0
+    face_count_by_type: dict[str, int] = {}
+    total_area = 0.0
+
+    explorer = TopExp_Explorer(shape, TopAbs_FACE)
+    while explorer.More():
+        face = explorer.Current()
+        if _topods_cast is not None:
+            face = _static(_topods_cast, "Face")(face)
+
+        try:
+            surf = BRepAdaptor_Surface(face, True)
+            face_type_enum = surf.GetType()
+            face_type = _FACE_TYPE_MAP.get(face_type_enum, "freeform")
+
+            props = GProp_GProps()
+            _static(BRepGProp, "SurfaceProperties")(face, props)
+            area = props.Mass()
+
+            area_by_type[face_type] = area_by_type.get(face_type, 0.0) + area
+            face_count_by_type[face_type] = face_count_by_type.get(face_type, 0) + 1
+            total_area += area
+
+            # Track inner vs outer cylindrical faces
+            if face_type == "cylindrical":
+                is_inner = face.Orientation() == TopAbs_REVERSED
+                if is_inner:
+                    inner_cyl_area += area
+                else:
+                    outer_cyl_area += area
+        except Exception:
+            pass
+
+        explorer.Next()
+
+    if total_area < 1e-12:
+        return "complex", {}
+
+    # Compute percentages
+    face_stats = {ft: round(a / total_area * 100, 1) for ft, a in area_by_type.items()}
+
+    cyl_pct = face_stats.get("cylindrical", 0.0)
+    planar_pct = face_stats.get("planar", 0.0)
+    planar_count = face_count_by_type.get("planar", 0)
+
+    # Cylindrical > 60% → shaft or housing based on inner/outer ratio
+    if cyl_pct > 60:
+        if inner_cyl_area > outer_cyl_area:
+            return "housing", face_stats
+        return "shaft", face_stats
+
+    # Cylindrical 30-60% + many small planar faces → gear_like
+    if 30 <= cyl_pct <= 60 and planar_count >= 8:
+        return "gear_like", face_stats
+
+    # Planar > 70% → plate or block depending on face count
+    if planar_pct > 70:
+        # Many planar faces = block-like, few = plate-like
+        if planar_count <= 8:
+            return "plate", face_stats
+        return "block", face_stats
+
+    return "complex", face_stats
 
 
 # ---------------------------------------------------------------------------
