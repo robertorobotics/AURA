@@ -147,7 +147,7 @@ function computeLayout(parts: { position?: number[]; layoutPosition?: number[]; 
 
 export function AssemblyViewer() {
   const { assembly, selectedStepId, selectStep } = useAssembly();
-  const { executionState } = useExecution();
+  const { executionState, speed } = useExecution();
   const controlsRef = useRef<OrbitControlsImpl>(null);
 
   const [exploded, setExploded] = useState(false);
@@ -314,6 +314,7 @@ export function AssemblyViewer() {
           executionActive={executionActive}
           executionState={executionState}
           executionAnimRef={executionAnimRef}
+          speed={speed}
         />
 
         {assembly &&

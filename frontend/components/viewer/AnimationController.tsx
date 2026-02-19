@@ -40,6 +40,7 @@ interface AnimationControllerProps {
   executionActive: boolean;
   executionState: ExecutionState;
   executionAnimRef: React.RefObject<ExecutionAnimState>;
+  speed?: number;
 }
 
 export function AnimationController({
@@ -54,6 +55,7 @@ export function AnimationController({
   executionActive,
   executionState,
   executionAnimRef,
+  speed,
 }: AnimationControllerProps) {
   const centroidRef = useRef<Vec3>([0, 0, 0]);
   const radiusRef = useRef(0.1);
@@ -79,6 +81,7 @@ export function AnimationController({
         delta,
         executionState,
         stepOrder,
+        speed ?? 1.0,
       );
       Object.assign(executionAnimRef.current, nextExec);
 

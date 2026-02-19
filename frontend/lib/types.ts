@@ -29,8 +29,12 @@ export interface Part {
   // Frontend-only 3D fields for placeholder rendering
   position?: [number, number, number];
   rotation?: [number, number, number];
-  geometry?: "box" | "cylinder" | "sphere";
+  geometry?: "box" | "cylinder" | "sphere" | "disc" | "plate";
   dimensions?: number[];
+  /** Face-analysis shape class (shaft, housing, gear_like, plate, block, complex). */
+  shapeClass?: string | null;
+  /** Percentage of total surface area by face type. */
+  faceStats?: Record<string, number> | null;
   color?: string;
   /** Pre-assembly position on work surface (from layout computation). */
   layoutPosition?: [number, number, number];

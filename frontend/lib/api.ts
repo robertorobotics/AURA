@@ -166,8 +166,12 @@ export const api = {
     ),
 
   // --- Execution ---
-  startAssembly: (id: string, speed?: number) =>
-    post("/execution/start", { assembly_id: id, speed: speed ?? 1.0 }),
+  startAssembly: (id: string, speed?: number, demoMode?: boolean) =>
+    post("/execution/start", {
+      assembly_id: id,
+      speed: speed ?? 1.0,
+      demo_mode: demoMode ?? false,
+    }),
   pauseExecution: () => post("/execution/pause"),
   resumeExecution: () => post("/execution/resume"),
   stopExecution: () => post("/execution/stop"),

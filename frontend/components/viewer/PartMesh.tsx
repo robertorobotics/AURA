@@ -112,6 +112,12 @@ export function PartMesh({
   // Track visual state for conditional rendering (edges, grasps)
   const visualRef = useRef<"ghost" | "active" | "complete">("complete");
 
+  // Sync props into refs so useFrame always reads fresh values (avoids stale closures)
+  const colorModeRef = useRef(colorMode);
+  const visColorRef = useRef(visibilityColor);
+  colorModeRef.current = colorMode;
+  visColorRef.current = visibilityColor;
+
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
     const rs: PartRenderState = renderStatesRef.current?.[part.id] ?? {
@@ -148,8 +154,8 @@ export function PartMesh({
     let color: string;
     if (isGhost) {
       color = GHOST_COLOR;
-    } else if (colorMode === "distinct" && visibilityColor) {
-      color = visibilityColor;
+    } else if (colorModeRef.current === "distinct" && visColorRef.current) {
+      color = visColorRef.current;
     } else {
       color = part.color ?? "#B0AEA8";
     }
@@ -177,13 +183,15 @@ export function PartMesh({
         if ((child as Mesh).isMesh) {
           const mat = (child as Mesh).material as MeshPhysicalMaterial;
           if (mat.color) {
+            const needsRecompile = mat.transparent !== transparent || mat.wireframe !== wire;
             mat.opacity = opacity;
             mat.transparent = transparent;
             mat.wireframe = wire;
+            if (needsRecompile) mat.needsUpdate = true;
             // Color: override > ghost > distinct mode > restore original GLB color
             if (rs.colorOverride) mat.color.set(rs.colorOverride);
             else if (isGhost) mat.color.set(GHOST_COLOR);
-            else if (colorMode === "distinct" && visibilityColor) mat.color.set(visibilityColor);
+            else if (colorModeRef.current === "distinct" && visColorRef.current) mat.color.set(visColorRef.current);
             else if ((child as Mesh).userData.originalColor) {
               mat.color.set(`#${(child as Mesh).userData.originalColor}`);
             }
@@ -274,8 +282,16 @@ export function PartMesh({
       )}
 
       {showGrasps &&
-        part.graspPoints.map((_, i) => (
-          <GraspPoint key={i} position={[0, dims[1] ? dims[1] / 2 : 0.02, 0]} index={i} />
+        part.graspPoints.map((gp, i) => (
+          <GraspPoint
+            key={i}
+            position={
+              gp.pose.length >= 3
+                ? [gp.pose[0], gp.pose[1], gp.pose[2]]
+                : [0, dims[1] ? dims[1] / 2 : 0.02, 0]
+            }
+            index={i}
+          />
         ))}
     </group>
   );

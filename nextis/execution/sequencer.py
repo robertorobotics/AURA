@@ -71,6 +71,7 @@ class Sequencer:
         router: PolicyRouter | None = None,
         analytics: AnalyticsStore | None = None,
         verifier: StepVerifier | None = None,
+        demo_mode: bool = False,
     ) -> None:
         if not graph.step_order:
             raise AssemblyError(f"Assembly '{graph.id}' has no steps to execute")
@@ -80,6 +81,7 @@ class Sequencer:
         self._router = router or PolicyRouter()
         self._analytics = analytics
         self._verifier = verifier
+        self._demo_mode = demo_mode
 
         self._state = SequencerState.IDLE
         self._step_index: int = 0
@@ -135,10 +137,11 @@ class Sequencer:
 
         self._task = asyncio.create_task(self._run())
         logger.info(
-            "Sequencer started: assembly=%s run=%d steps=%d",
+            "Sequencer started: assembly=%s run=%d steps=%d demo_mode=%s",
             self._graph.id,
             self._run_number,
             len(self._graph.step_order),
+            self._demo_mode,
         )
 
     async def pause(self) -> None:
@@ -411,6 +414,9 @@ class Sequencer:
 
     async def _dispatch_step(self, step: AssemblyStep) -> StepResult:
         """Dispatch a single step to the policy router."""
+        if self._demo_mode:
+            await asyncio.sleep(0.3)
+            return StepResult(success=True, duration_ms=300.0, handler_used="demo")
         return await self._router.dispatch(step)
 
     def _emit(self) -> None:

@@ -73,6 +73,7 @@ class StartRequest(BaseModel):
 
     assembly_id: str = Field(alias="assemblyId")
     speed: float = Field(default=1.0, ge=0.1, le=20.0)
+    demo_mode: bool = Field(default=False, alias="demoMode")
 
 
 # ------------------------------------------------------------------
@@ -133,6 +134,7 @@ async def start_execution(request: StartRequest) -> dict[str, str]:
         on_state_change=_broadcast_state,
         router=policy_router,
         analytics=_analytics_store,
+        demo_mode=request.demo_mode,
     )
     await _sequencer.start()
     return {"status": "ok"}

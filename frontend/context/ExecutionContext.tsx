@@ -22,6 +22,10 @@ import { useWebSocket } from "./WebSocketContext";
 interface ExecutionContextValue {
   executionState: ExecutionState;
   isRunning: boolean;
+  speed: number;
+  setSpeed: (speed: number) => void;
+  demoMode: boolean;
+  setDemoMode: (on: boolean) => void;
   startExecution: () => void;
   pauseExecution: () => void;
   resumeExecution: () => void;
@@ -62,6 +66,8 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
     elapsedMs: 0,
     overallSuccessRate: 0,
   });
+  const [demoMode, setDemoMode] = useState(false);
+  const [speed, setSpeed] = useState(1.0);
   const [wsActive, setWsActive] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepIndexRef = useRef(0);
@@ -205,7 +211,7 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
     clearTimer();
     stepIndexRef.current = 0;
 
-    api.startAssembly(assembly.id).catch(console.warn);
+    api.startAssembly(assembly.id, speed, demoMode).catch(console.warn);
 
     // Set optimistic local state (overwritten by WS if connected)
     const firstStepId = assembly.stepOrder[0];
@@ -233,9 +239,9 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
 
     // Only start mock timer if WS is not delivering real state
     if (!wsActive) {
-      timerRef.current = setInterval(advanceStep, 1500);
+      timerRef.current = setInterval(advanceStep, 1500 / speed);
     }
-  }, [assembly, clearTimer, advanceStep, wsActive, state.runNumber, state.overallSuccessRate]);
+  }, [assembly, clearTimer, advanceStep, wsActive, state.runNumber, state.overallSuccessRate, demoMode, speed]);
 
   const pauseExecution = useCallback(() => {
     api.pauseExecution().catch(console.warn);
@@ -249,9 +255,9 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
     api.resumeExecution().catch(console.warn);
     if (!wsActive) {
       setState((prev) => ({ ...prev, phase: "running" }));
-      timerRef.current = setInterval(advanceStep, 1500);
+      timerRef.current = setInterval(advanceStep, 1500 / speed);
     }
-  }, [advanceStep, wsActive]);
+  }, [advanceStep, wsActive, speed]);
 
   const stopExecution = useCallback(() => {
     api.stopExecution().catch(console.warn);
@@ -317,6 +323,10 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
     () => ({
       executionState: state,
       isRunning: state.phase === "running",
+      speed,
+      setSpeed,
+      demoMode,
+      setDemoMode,
       startExecution,
       pauseExecution,
       resumeExecution,
@@ -324,7 +334,7 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
       emergencyStop,
       intervene,
     }),
-    [state, startExecution, pauseExecution, resumeExecution, stopExecution, emergencyStop, intervene],
+    [state, startExecution, pauseExecution, resumeExecution, stopExecution, emergencyStop, intervene, speed, demoMode],
   );
 
   return (

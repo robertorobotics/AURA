@@ -127,16 +127,20 @@ export function tickExecutionAnim(
   delta: number,
   executionState: ExecutionState,
   stepOrder: string[],
+  speed: number = 1.0,
 ): ExecutionAnimState {
   // Freeze animation when paused
   if (executionState.phase === "paused") return prev;
+
+  // Scale delta by playback speed — animations run faster/slower
+  const scaledDelta = delta * speed;
 
   const next: ExecutionAnimState = {
     stepAnims: { ...prev.stepAnims },
     prevRunningStepId: prev.prevRunningStepId,
     endEffectorTarget: [...prev.endEffectorTarget] as Vec3,
     endEffectorPhase: prev.endEffectorPhase,
-    transitionPauseRemaining: Math.max(0, prev.transitionPauseRemaining - delta),
+    transitionPauseRemaining: Math.max(0, prev.transitionPauseRemaining - scaledDelta),
   };
 
   // Sync step animation states with execution step states
@@ -161,11 +165,11 @@ export function tickExecutionAnim(
       };
     } else {
       // Advance timers
-      const updated = { ...prevAnim, statusTime: prevAnim.statusTime + delta };
+      const updated = { ...prevAnim, statusTime: prevAnim.statusTime + scaledDelta };
       if (runtimeState.status === "running") {
         updated.motionProgress = Math.min(
           1,
-          updated.motionProgress + delta / EXEC_TIMING.STEP_MOTION_DURATION,
+          updated.motionProgress + scaledDelta / EXEC_TIMING.STEP_MOTION_DURATION,
         );
       }
       next.stepAnims[stepId] = updated;
