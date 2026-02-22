@@ -374,9 +374,7 @@ class TestCADParser:
         # Load GLB and verify vertex extents are metre-scale
         mesh = trimesh.load(str(output))
         extents = mesh.bounding_box.extents
-        assert all(e < 0.1 for e in extents), (
-            f"Expected metre-scale GLB extents, got {extents}"
-        )
+        assert all(e < 0.1 for e in extents), f"Expected metre-scale GLB extents, got {extents}"
 
     def test_unit_scale_json_round_trip(self, step_file_3parts: Path, tmp_path: Path):
         """unitScale field round-trips through JSON serialization."""
@@ -440,9 +438,7 @@ class TestCADParser:
         result = parser.parse(step_file_nested_hierarchy, tmp_path / "meshes")
 
         positions = [tuple(p.position) for p in result.graph.parts.values()]
-        assert len(set(positions)) == len(positions), (
-            f"Parts have duplicate positions: {positions}"
-        )
+        assert len(set(positions)) == len(positions), f"Parts have duplicate positions: {positions}"
 
 
 # ---------------------------------------------------------------------------

@@ -14,6 +14,7 @@ from typing import Any
 
 import yaml
 
+from nextis.errors import HardwareError
 from nextis.hardware.types import (
     ArmDefinition,
     ArmRole,
@@ -35,8 +36,14 @@ class ArmRegistryService:
         config_path: Path to the YAML configuration file.
     """
 
-    def __init__(self, config_path: str | Path = "configs/arms/settings.yaml") -> None:
-        self.config_path = Path(config_path)
+    def __init__(self, config_path: str | Path | None = None) -> None:
+        if config_path is None:
+            from nextis.config import CONFIG_PATH, _resolve_config_path
+
+            resolved = _resolve_config_path()
+            self.config_path = resolved if resolved is not None else CONFIG_PATH
+        else:
+            self.config_path = Path(config_path)
         self.arms: dict[str, ArmDefinition] = {}
         self.pairings: list[Pairing] = []
         self.arm_instances: dict[str, Any] = {}
@@ -372,72 +379,87 @@ class ArmRegistryService:
         Factory method that imports and instantiates lerobot hardware
         classes based on motor type and role. Imports are lazy to avoid
         hard dependency on lerobot when not connecting.
+
+        Raises:
+            HardwareError: If lerobot is not importable when connecting.
         """
-        try:
-            if arm.motor_type == MotorType.STS3215:
-                if arm.role == ArmRole.FOLLOWER:
+        _lerobot_hint = (
+            "lerobot not found. Ensure lerobot/src is on PYTHONPATH. "
+            "See start.sh or run with PYTHONPATH=lerobot/src:$PYTHONPATH"
+        )
+
+        if arm.motor_type == MotorType.STS3215:
+            if arm.role == ArmRole.FOLLOWER:
+                try:
                     from lerobot.robots.umbra_follower import UmbraFollowerRobot
                     from lerobot.robots.umbra_follower.config_umbra_follower import (
                         UmbraFollowerConfig,
                     )
+                except ImportError as e:
+                    raise HardwareError(f"{_lerobot_hint} ({e})") from e
 
-                    config = UmbraFollowerConfig(id=arm.id, port=arm.port, cameras={})
-                    robot = UmbraFollowerRobot(config)
-                    robot.connect(calibrate=False)
-                    return robot
-                else:
-                    from lerobot.teleoperators.umbra_leader import UmbraLeader
+                config = UmbraFollowerConfig(id=arm.id, port=arm.port, cameras={})
+                robot = UmbraFollowerRobot(config)
+                robot.connect(calibrate=False)
+                return robot
+            else:
+                try:
+                    from lerobot.teleoperators.umbra_leader import UmbraLeaderRobot
                     from lerobot.teleoperators.umbra_leader.config_umbra_leader import (
                         UmbraLeaderConfig,
                     )
+                except ImportError as e:
+                    raise HardwareError(f"{_lerobot_hint} ({e})") from e
 
-                    config = UmbraLeaderConfig(id=arm.id, port=arm.port)
-                    leader = UmbraLeader(config)
-                    leader.connect(calibrate=False)
-                    return leader
+                config = UmbraLeaderConfig(id=arm.id, port=arm.port)
+                leader = UmbraLeaderRobot(config)
+                leader.connect(calibrate=False)
+                return leader
 
-            elif arm.motor_type == MotorType.DAMIAO:
-                if arm.role == ArmRole.FOLLOWER:
+        elif arm.motor_type == MotorType.DAMIAO:
+            if arm.role == ArmRole.FOLLOWER:
+                try:
                     from lerobot.robots.damiao_follower import DamiaoFollowerRobot
                     from lerobot.robots.damiao_follower.config_damiao_follower import (
                         DamiaoFollowerConfig,
                     )
+                except ImportError as e:
+                    raise HardwareError(f"{_lerobot_hint} ({e})") from e
 
-                    config = DamiaoFollowerConfig(
-                        id=arm.id,
-                        port=arm.port,
-                        velocity_limit=arm.config.get("velocity_limit", 0.3),
-                        cameras={},
-                    )
-                    robot = DamiaoFollowerRobot(config)
-                    robot.connect()
-                    return robot
-                else:
-                    logger.warning("Damiao leader arms not yet supported")
-                    return None
+                config = DamiaoFollowerConfig(
+                    id=arm.id,
+                    port=arm.port,
+                    velocity_limit=arm.config.get("velocity_limit", 0.3),
+                    cameras={},
+                )
+                robot = DamiaoFollowerRobot(config)
+                robot.connect()
+                return robot
+            else:
+                logger.warning("Damiao leader arms not yet supported")
+                return None
 
-            elif arm.motor_type in (MotorType.DYNAMIXEL_XL330, MotorType.DYNAMIXEL_XL430):
-                if arm.role == ArmRole.LEADER:
+        elif arm.motor_type in (MotorType.DYNAMIXEL_XL330, MotorType.DYNAMIXEL_XL430):
+            if arm.role == ArmRole.LEADER:
+                try:
                     from lerobot.teleoperators.dynamixel_leader import DynamixelLeader
                     from lerobot.teleoperators.dynamixel_leader.config_dynamixel_leader import (
                         DynamixelLeaderConfig,
                     )
+                except ImportError as e:
+                    raise HardwareError(f"{_lerobot_hint} ({e})") from e
 
-                    config = DynamixelLeaderConfig(
-                        id=arm.id,
-                        port=arm.port,
-                        structural_design=arm.structural_design or "",
-                    )
-                    leader = DynamixelLeader(config)
-                    leader.connect(calibrate=False)
-                    return leader
-                else:
-                    logger.warning("Dynamixel follower arms not typical use case")
-                    return None
-
-        except ImportError as e:
-            logger.error("lerobot not available for %s: %s", arm.motor_type.value, e)
-            return None
+                config = DynamixelLeaderConfig(
+                    id=arm.id,
+                    port=arm.port,
+                    structural_design=arm.structural_design or "",
+                )
+                leader = DynamixelLeader(config)
+                leader.connect(calibrate=False)
+                return leader
+            else:
+                logger.warning("Dynamixel follower arms not typical use case")
+                return None
 
         logger.warning("Unknown motor type: %s", arm.motor_type)
         return None
@@ -476,6 +498,77 @@ class ArmRegistryService:
             logger.info("Saved arm configuration to %s", self.config_path)
         except Exception as e:
             logger.error("Failed to save config: %s", e)
+
+    # --- Home Position ---
+
+    def set_home(self, arm_id: str) -> dict:
+        """Capture current motor positions as the home position.
+
+        Reads from the connected arm instance and stores in
+        ``arm.config["home_position"]``. Persists to YAML.
+        """
+        if arm_id not in self.arms:
+            return {"success": False, "error": f"Arm '{arm_id}' not found"}
+        if self.arm_status.get(arm_id) != ConnectionStatus.CONNECTED:
+            return {"success": False, "error": f"Arm '{arm_id}' not connected"}
+
+        instance = self.arm_instances.get(arm_id)
+        if instance is None:
+            return {"success": False, "error": "No arm instance available"}
+
+        try:
+            # Read current positions from the hardware instance
+            positions: dict[str, float] = {}
+            if hasattr(instance, "get_observation"):
+                obs = instance.get_observation()
+                for key, val in obs.items():
+                    if key.endswith(".pos") or "position" in key.lower():
+                        positions[key] = float(val)
+            elif hasattr(instance, "bus") and hasattr(instance.bus, "read"):
+                motor_names = getattr(instance, "motor_names", [])
+                for name in motor_names:
+                    try:
+                        val = instance.bus.read("Present_Position", name)
+                        if val is not None:
+                            positions[name] = float(val)
+                    except Exception:
+                        pass
+
+            if not positions:
+                return {"success": False, "error": "Could not read motor positions"}
+
+            self.arms[arm_id].config["home_position"] = positions
+            self._save_config()
+            logger.info("Set home position for %s: %d motors", arm_id, len(positions))
+            return {"success": True, "positions": positions}
+        except Exception as exc:
+            logger.error("Failed to set home for %s: %s", arm_id, exc)
+            return {"success": False, "error": str(exc)}
+
+    def clear_home(self, arm_id: str) -> dict:
+        """Remove stored home position for an arm."""
+        if arm_id not in self.arms:
+            return {"success": False, "error": f"Arm '{arm_id}' not found"}
+
+        self.arms[arm_id].config.pop("home_position", None)
+        self._save_config()
+        logger.info("Cleared home position for %s", arm_id)
+        return {"success": True}
+
+    # --- Compatibility ---
+
+    def get_compatible_followers(self, leader_id: str) -> list[dict]:
+        """Return follower arms with matching structural design."""
+        if leader_id not in self.arms:
+            return []
+        leader = self.arms[leader_id]
+        if not leader.structural_design:
+            return self.get_followers()
+        return [
+            a
+            for a in self.get_followers()
+            if a.get("structural_design") == leader.structural_design
+        ]
 
     # --- Utility ---
 

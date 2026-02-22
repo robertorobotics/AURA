@@ -71,9 +71,7 @@ class GaussianActor(nn.Module):
         self.mean_head = nn.Linear(hidden_dim, action_dim)
         self.log_std_head = nn.Linear(hidden_dim, action_dim)
 
-    def forward(
-        self, obs: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, obs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute action and log probability via reparameterization.
 
         Args:
@@ -163,9 +161,7 @@ class SACAgent:
         self._device = torch.device(config.device)
 
         # Actor
-        self._actor = GaussianActor(
-            config.obs_dim, config.action_dim
-        ).to(self._device)
+        self._actor = GaussianActor(config.obs_dim, config.action_dim).to(self._device)
 
         # Twin critics
         self._q1 = QNetwork(config.obs_dim, config.action_dim).to(self._device)
@@ -184,25 +180,19 @@ class SACAgent:
         self._target_entropy = -float(config.action_dim)
 
         # Optimizers
-        self._actor_opt = torch.optim.Adam(
-            self._actor.parameters(), lr=config.actor_lr
-        )
+        self._actor_opt = torch.optim.Adam(self._actor.parameters(), lr=config.actor_lr)
         self._critic_opt = torch.optim.Adam(
             list(self._q1.parameters()) + list(self._q2.parameters()),
             lr=config.critic_lr,
         )
-        self._alpha_opt = torch.optim.Adam(
-            [self._log_alpha], lr=config.temperature_lr
-        )
+        self._alpha_opt = torch.optim.Adam([self._log_alpha], lr=config.temperature_lr)
 
     @property
     def alpha(self) -> float:
         """Current temperature value."""
         return self._log_alpha.exp().item()
 
-    def select_action(
-        self, obs: np.ndarray, deterministic: bool = False
-    ) -> np.ndarray:
+    def select_action(self, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
         """Select an action from the policy.
 
         Args:
@@ -266,9 +256,7 @@ class SACAgent:
         self._actor_opt.step()
 
         # --- Alpha update ---
-        alpha_loss = -(
-            self._log_alpha.exp() * (log_prob.detach() + self._target_entropy)
-        ).mean()
+        alpha_loss = -(self._log_alpha.exp() * (log_prob.detach() + self._target_entropy)).mean()
 
         self._alpha_opt.zero_grad()
         alpha_loss.backward()
@@ -375,9 +363,7 @@ class SACAgent:
         logger.info("Loaded SAC agent from %s", path)
         return agent
 
-    def _transitions_to_tensors(
-        self, transitions: list[Transition]
-    ) -> dict[str, torch.Tensor]:
+    def _transitions_to_tensors(self, transitions: list[Transition]) -> dict[str, torch.Tensor]:
         """Convert a list of transitions to batched tensors."""
         obs = np.stack([t.obs for t in transitions])
         actions = np.stack([t.action for t in transitions])
@@ -388,15 +374,9 @@ class SACAgent:
         return {
             "obs": torch.tensor(obs, dtype=torch.float32, device=self._device),
             "action": torch.tensor(actions, dtype=torch.float32, device=self._device),
-            "reward": torch.tensor(
-                rewards, dtype=torch.float32, device=self._device
-            ).unsqueeze(-1),
-            "next_obs": torch.tensor(
-                next_obs, dtype=torch.float32, device=self._device
-            ),
-            "done": torch.tensor(
-                dones, dtype=torch.float32, device=self._device
-            ).unsqueeze(-1),
+            "reward": torch.tensor(rewards, dtype=torch.float32, device=self._device).unsqueeze(-1),
+            "next_obs": torch.tensor(next_obs, dtype=torch.float32, device=self._device),
+            "done": torch.tensor(dones, dtype=torch.float32, device=self._device).unsqueeze(-1),
         }
 
     def _soft_update(self, source: nn.Module, target: nn.Module) -> None:

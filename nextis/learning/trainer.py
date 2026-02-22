@@ -35,6 +35,9 @@ class TrainingConfig:
         learning_rate: Adam optimizer learning rate.
         chunk_size: Number of future actions predicted per step.
         hidden_dim: Transformer hidden dimension.
+        architecture: Policy architecture (``"act"``, ``"diffusion"``, ``"pi0"``).
+        num_diffusion_steps: Number of DDPM timesteps (diffusion only).
+        num_flow_steps: Number of Euler integration steps (pi0 only).
     """
 
     num_epochs: int = 100
@@ -42,6 +45,9 @@ class TrainingConfig:
     learning_rate: float = 1e-4
     chunk_size: int = 10
     hidden_dim: int = 128
+    architecture: str = "act"
+    num_diffusion_steps: int = 100
+    num_flow_steps: int = 20
 
 
 @dataclass
@@ -142,21 +148,41 @@ class PolicyTrainer:
         dataset_info: DatasetInfo,
         config: TrainingConfig | None = None,
         on_progress: Callable[[TrainingProgress], None] | None = None,
+        should_cancel: Callable[[], bool] | None = None,
     ) -> TrainingResult:
-        """Train a MinimalACT policy on the given dataset.
+        """Train a policy on the given dataset.
+
+        Dispatches to the appropriate trainer based on ``config.architecture``.
+        Supported: ``"act"`` (default), ``"diffusion"``, ``"pi0"``.
 
         Args:
             dataset_info: Output from StepDataset.build().
             config: Training hyperparameters (uses defaults if None).
             on_progress: Optional callback for epoch-level progress updates.
+            should_cancel: Optional callable returning True to cancel training.
 
         Returns:
             TrainingResult with checkpoint path and final loss.
 
         Raises:
-            TrainingError: If training data cannot be loaded.
+            TrainingError: If training data cannot be loaded or training is cancelled.
         """
         cfg = config or TrainingConfig()
+        architecture = getattr(cfg, "architecture", "act") or "act"
+
+        # Dispatch to specialized trainers for non-ACT architectures
+        if architecture == "diffusion":
+            from nextis.learning.diffusion_policy import DiffusionTrainer
+
+            return await DiffusionTrainer(self._policies_dir).train(
+                dataset_info, cfg, on_progress, should_cancel
+            )
+        if architecture == "pi0":
+            from nextis.learning.flow_policy import FlowTrainer
+
+            return await FlowTrainer(self._policies_dir).train(
+                dataset_info, cfg, on_progress, should_cancel
+            )
 
         try:
             train_obs = np.load(dataset_info.output_dir / "train_obs.npy")
@@ -231,6 +257,10 @@ class PolicyTrainer:
                         val_loss=val_loss,
                     )
                 )
+
+            if should_cancel and should_cancel():
+                logger.info("ACT training cancelled at epoch %d", epoch)
+                raise TrainingError("Training cancelled by user")
 
             if epoch % 10 == 0 or epoch == cfg.num_epochs - 1:
                 val_str = f", val_loss={val_loss:.6f}" if val_loss is not None else ""

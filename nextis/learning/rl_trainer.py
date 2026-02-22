@@ -200,17 +200,13 @@ class StepRLTrainer:
                 break
 
             # Run one episode
-            ep_reward, ep_len, ep_interventions, ep_success = (
-                await self._run_episode()
-            )
+            ep_reward, ep_len, ep_interventions, ep_success = await self._run_episode()
             self._total_interventions += ep_interventions
             self._success_history.append(ep_success)
 
             # SAC updates
             if len(self._buffer) >= self._config.warmup_transitions:
-                metrics = self._do_sac_updates(
-                    max(1, self._config.updates_per_step * ep_len)
-                )
+                metrics = self._do_sac_updates(max(1, self._config.updates_per_step * ep_len))
                 avg_critic = metrics.get("critic_loss", 0.0)
                 avg_actor = metrics.get("actor_loss", 0.0)
 
@@ -236,8 +232,7 @@ class StepRLTrainer:
 
             if episode % 10 == 0 or episode == self._config.max_episodes - 1:
                 logger.info(
-                    "Episode %d/%d: reward=%.2f, success_rate=%.2f, "
-                    "interventions=%d, buffer=%d",
+                    "Episode %d/%d: reward=%.2f, success_rate=%.2f, interventions=%d, buffer=%d",
                     episode,
                     self._config.max_episodes,
                     ep_reward,
@@ -247,10 +242,7 @@ class StepRLTrainer:
                 )
 
             # Periodic checkpoint
-            if (
-                episode > 0
-                and episode % self._config.save_interval_episodes == 0
-            ):
+            if episode > 0 and episode % self._config.save_interval_episodes == 0:
                 self._save_checkpoint()
 
             # Early stop on success
@@ -393,7 +385,8 @@ class StepRLTrainer:
         total_metrics: dict[str, float] = {}
 
         batch_size = min(
-            self._sac._config.batch_size, len(self._buffer)  # noqa: SLF001
+            self._sac._config.batch_size,
+            len(self._buffer),  # noqa: SLF001
         )
         if batch_size == 0:
             return {}
@@ -412,9 +405,7 @@ class StepRLTrainer:
 
     def _preload_demos(self) -> None:
         """Load HDF5 demos into the replay buffer as expert data."""
-        demos_dir = (
-            Path("data/demos") / self._assembly_id / self._step.id
-        )
+        demos_dir = Path("data/demos") / self._assembly_id / self._step.id
         if not demos_dir.exists():
             logger.debug("No demo directory found at %s", demos_dir)
             return

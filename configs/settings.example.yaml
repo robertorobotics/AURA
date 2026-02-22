@@ -1,0 +1,82 @@
+# AURA — Unified Platform Configuration
+# Copy to settings.yaml and adjust ports/IDs for your setup.
+#
+# Port discovery:
+#   macOS:   ls /dev/tty.usbserial-*  (Dynamixel)
+#            ls /dev/tty.usbmodem*    (CAN-to-serial)
+#   Linux:   ls /dev/ttyUSB*          (Dynamixel)
+#            ls /dev/ttyACM*          (CAN-to-serial)
+
+arms:
+  aira_zero:
+    name: "Aira Zero Follower"
+    role: follower
+    motor_type: damiao
+    port: can0
+    enabled: true
+    structural_design: damiao_7dof
+    config:
+      velocity_limit: 0.3
+      home_position: {}
+
+  aira_zero_leader:
+    name: "Aira Zero Leader"
+    role: leader
+    motor_type: dynamixel_xl330
+    port: /dev/ttyACM0
+    enabled: true
+    structural_design: umbra_7dof
+
+pairings:
+  - leader: aira_zero_leader
+    follower: aira_zero
+    name: "Aira Zero Pair"
+
+cameras:
+  # top_cam:
+  #   type: opencv
+  #   index_or_path: /dev/video0
+  #   video_device_id: /dev/video0
+  #   width: 640
+  #   height: 480
+  #   fps: 30
+  # wrist_cam:
+  #   type: intelrealsense
+  #   serial_number_or_name: ""
+  #   width: 848
+  #   height: 480
+  #   fps: 10
+  #   use_depth: false
+
+tools:
+  # screwdriver_1:
+  #   name: "Main Screwdriver"
+  #   motor_type: sts3215
+  #   port: /dev/ttyUSB1
+  #   motor_id: 8
+  #   tool_type: screwdriver
+  #   enabled: true
+  #   config:
+  #     speed: 2000
+  #     direction: -1
+
+triggers:
+  # button1:
+  #   name: "Screwdriver Trigger"
+  #   trigger_type: gpio_switch
+  #   port: /dev/ttyACM2
+  #   pin: 0
+  #   active_low: true
+  #   enabled: true
+
+tool_pairings:
+  # - trigger_id: button1
+  #   tool_id: screwdriver_1
+  #   name: "Screwdriver Trigger -> Main Screwdriver"
+  #   action: toggle
+
+training:
+  policy: diffusion
+  batch_size: 8
+  offline_steps: 10000
+  steps: 5000

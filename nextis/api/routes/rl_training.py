@@ -31,9 +31,7 @@ _trainer: StepRLTrainer | None = None  # noqa: PLW0603
 
 
 @router.post("/step/{step_id}/start")
-async def start_rl_training(
-    step_id: str, request: RLStartRequest
-) -> dict[str, str]:
+async def start_rl_training(step_id: str, request: RLStartRequest) -> dict[str, str]:
     """Start RL fine-tuning for an assembly step.
 
     Launches a background task running the RL training loop. Only one
@@ -82,9 +80,7 @@ async def start_rl_training(
 
     def on_progress(p: RLProgress) -> None:
         _rl_state.episode = p.episode
-        _rl_state.success_rate = (
-            1.0 if p.success else _rl_state.success_rate * 0.9
-        )
+        _rl_state.success_rate = 1.0 if p.success else _rl_state.success_rate * 0.9
         _rl_state.intervention_rate = p.intervention_rate
         _rl_state.critic_loss = p.critic_loss
         _rl_state.actor_loss = p.actor_loss
@@ -100,16 +96,12 @@ async def start_rl_training(
         on_progress=on_progress,
     )
 
-    _rl_task = asyncio.create_task(
-        _run_rl_session(_trainer, _rl_state)
-    )
+    _rl_task = asyncio.create_task(_run_rl_session(_trainer, _rl_state))
 
     return {"status": "started", "stepId": step_id}
 
 
-async def _run_rl_session(
-    trainer: StepRLTrainer, state: RLTrainingState
-) -> None:
+async def _run_rl_session(trainer: StepRLTrainer, state: RLTrainingState) -> None:
     """Background task that runs the RL training loop."""
     try:
         result = await trainer.train()

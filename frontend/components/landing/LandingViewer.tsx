@@ -189,6 +189,7 @@ export function LandingViewer({ assembly }: LandingViewerProps) {
           selectedStepId={null}
           firstStepIdForPart={partToStepId[part.id] ?? null}
           wireframeOverlay={false}
+          colorMode="original"
           onClick={noop}
         />
       ))}

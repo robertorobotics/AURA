@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,6 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from nextis.analytics.store import AnalyticsStore
 from nextis.api.schemas import ExecutionState
 from nextis.assembly.models import AssemblyGraph
+from nextis.config import ANALYTICS_DIR
+from nextis.config import ASSEMBLIES_DIR as CONFIGS_DIR
 from nextis.control.primitives import PrimitiveLibrary
 from nextis.execution.policy_router import PolicyRouter
 from nextis.execution.sequencer import Sequencer, SequencerState
@@ -23,9 +24,6 @@ from nextis.execution.sequencer import Sequencer, SequencerState
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-CONFIGS_DIR = Path(__file__).resolve().parents[3] / "configs" / "assemblies"
-ANALYTICS_DIR = Path(__file__).resolve().parents[3] / "data" / "analytics"
 
 # Module-level state — only one execution at a time.
 _sequencer: Sequencer | None = None

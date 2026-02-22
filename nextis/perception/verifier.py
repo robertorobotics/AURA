@@ -40,9 +40,7 @@ class StepVerifier:
             # Retry or escalate to human
     """
 
-    async def verify(
-        self, step: AssemblyStep, exec_data: ExecutionData
-    ) -> VerificationResult:
+    async def verify(self, step: AssemblyStep, exec_data: ExecutionData) -> VerificationResult:
         """Verify that a step met its success criteria.
 
         Args:

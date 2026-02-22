@@ -1,10 +1,13 @@
 import type {
+  ArmStatus,
   Assembly,
   AssemblySummary,
   ExecutionState,
+  PairingInfo,
   PlanAnalysis,
   StepMetrics,
   StepRuntimeState,
+  SystemStatus,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -293,3 +296,49 @@ export const MOCK_PLAN_ANALYSIS: PlanAnalysis = {
   summary:
     "This is a straightforward 5-step bearing assembly. The heuristic plan is mostly correct. Consider switching the bearing insertion from policy to linear_insert primitive since the tolerance is not tight.",
 };
+
+// ---------------------------------------------------------------------------
+// Setup modal mock data
+// ---------------------------------------------------------------------------
+
+export const MOCK_SYSTEM_STATUS: SystemStatus = {
+  phase: "ready",
+  error: null,
+  totalArms: 2,
+  connected: 0,
+  disconnected: 2,
+  leaders: 1,
+  followers: 1,
+  teleopActive: false,
+  recording: false,
+  camerasConnected: 0,
+};
+
+export const MOCK_ARMS: ArmStatus[] = [
+  {
+    id: "leader_left",
+    name: "Leader Left",
+    role: "leader",
+    motorType: "dynamixel",
+    port: "/dev/ttyUSB0",
+    enabled: true,
+    structuralDesign: "so100",
+    calibrated: true,
+    status: "disconnected",
+  },
+  {
+    id: "follower_left",
+    name: "Follower Left",
+    role: "follower",
+    motorType: "damiao",
+    port: "can0",
+    enabled: true,
+    structuralDesign: "so100",
+    calibrated: false,
+    status: "disconnected",
+  },
+];
+
+export const MOCK_PAIRINGS: PairingInfo[] = [
+  { leaderId: "leader_left", followerId: "follower_left", name: "Left Pair" },
+];

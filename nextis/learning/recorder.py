@@ -56,6 +56,7 @@ class _Frame:
     gripper_state: float
     force_torque: dict[str, float]
     action_positions: dict[str, float]
+    camera_frames: dict[str, np.ndarray] | None = None
 
 
 class DemoRecorder:
@@ -75,6 +76,7 @@ class DemoRecorder:
         assembly_id: str,
         step_id: str,
         data_dir: Path = DEFAULT_DATA_DIR,
+        camera_keys: list[str] | None = None,
     ) -> None:
         if not HAS_H5PY:
             raise RecordingError("h5py is required for recording. pip install h5py")
@@ -83,6 +85,7 @@ class DemoRecorder:
         self._step_id = step_id
         self._data_dir = data_dir
 
+        self._camera_keys = camera_keys or []
         self._frames: list[_Frame] = []
         self._is_recording = False
         self._thread: threading.Thread | None = None
@@ -119,6 +122,7 @@ class DemoRecorder:
         robot_state_fn: Callable[[], dict[str, float]],
         action_fn: Callable[[], dict[str, float]],
         torque_fn: Callable[[], dict[str, float]] | None = None,
+        camera_fn: Callable[[str], np.ndarray | None] | None = None,
     ) -> None:
         """Begin recording in a background thread.
 
@@ -126,6 +130,7 @@ class DemoRecorder:
             robot_state_fn: Returns current robot observation dict.
             action_fn: Returns latest teleop action dict.
             torque_fn: Optional — returns force/torque readings.
+            camera_fn: Optional — called with camera_key, returns BGR frame.
 
         Raises:
             RecordingError: If already recording.
@@ -139,7 +144,7 @@ class DemoRecorder:
 
         self._thread = threading.Thread(
             target=self._record_loop,
-            args=(robot_state_fn, action_fn, torque_fn),
+            args=(robot_state_fn, action_fn, torque_fn, camera_fn),
             daemon=True,
             name=f"Recorder-{self._step_id}",
         )
@@ -207,6 +212,7 @@ class DemoRecorder:
         robot_state_fn: Callable[[], dict[str, float]],
         action_fn: Callable[[], dict[str, float]],
         torque_fn: Callable[[], dict[str, float]] | None,
+        camera_fn: Callable[[str], np.ndarray | None] | None,
     ) -> None:
         """Background capture loop at 50 Hz."""
         dt = 1.0 / RECORDING_HZ
@@ -224,6 +230,17 @@ class DemoRecorder:
                         gripper_val = v
                         break
 
+                # Capture camera frames (ZOH — non-blocking)
+                cam_frames: dict[str, np.ndarray] | None = None
+                if camera_fn and self._camera_keys:
+                    cam_frames = {}
+                    for cam_key in self._camera_keys:
+                        frame = camera_fn(cam_key)
+                        if frame is not None:
+                            cam_frames[cam_key] = frame
+                    if not cam_frames:
+                        cam_frames = None
+
                 self._frames.append(
                     _Frame(
                         timestamp=time.time(),
@@ -231,6 +248,7 @@ class DemoRecorder:
                         gripper_state=gripper_val,
                         force_torque=torques,
                         action_positions=action,
+                        camera_frames=cam_frames,
                     )
                 )
             except Exception as e:
@@ -298,5 +316,29 @@ class DemoRecorder:
                     ap[i, j] = fr.action_positions.get(k, 0.0)
             act_grp.create_dataset("joint_positions", data=ap)
             act_grp.attrs["joint_keys"] = action_keys
+
+            # Camera images (optional)
+            if self._camera_keys and any(fr.camera_frames for fr in self._frames):
+                img_grp = f.create_group("observation/images")
+                img_grp.attrs["camera_keys"] = self._camera_keys
+                for cam_key in self._camera_keys:
+                    frames_list: list[np.ndarray] = []
+                    last_frame: np.ndarray | None = None
+                    for fr in self._frames:
+                        if fr.camera_frames and cam_key in fr.camera_frames:
+                            last_frame = fr.camera_frames[cam_key]
+                        if last_frame is not None:
+                            frames_list.append(last_frame)
+                    if not frames_list:
+                        continue
+                    stacked = np.stack(frames_list)
+                    h, w = stacked.shape[1], stacked.shape[2]
+                    img_grp.create_dataset(
+                        cam_key,
+                        data=stacked,
+                        chunks=(1, h, w, 3),
+                        compression="gzip",
+                        compression_opts=1,
+                    )
 
         logger.info("Flushed %d frames to %s", n, self._file_path)

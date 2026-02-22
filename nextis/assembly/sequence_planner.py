@@ -108,9 +108,7 @@ class SequencePlanner:
             # Pick step — depends on assembly steps of contacted parts
             step_num += 1
             pick_id = f"step_{step_num:03d}"
-            pick_deps = _contact_deps(
-                part.id, adjacency, part_to_asm_step, base_step_id
-            )
+            pick_deps = _contact_deps(part.id, adjacency, part_to_asm_step, base_step_id)
             steps[pick_id] = AssemblyStep(
                 id=pick_id,
                 name=f"Pick {part.id}",
@@ -252,9 +250,7 @@ class SequencePlanner:
             return ("policy", None, None, SuccessCriteria(type="classifier"))
 
         # --- Branch 5: All planar → primitive place with auto params ---
-        if contact_infos and all(
-            ci.contact_type == ContactType.PLANAR for ci in contact_infos
-        ):
+        if contact_infos and all(ci.contact_type == ContactType.PLANAR for ci in contact_infos):
             return (
                 "primitive",
                 "place",

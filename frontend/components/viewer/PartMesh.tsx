@@ -287,7 +287,7 @@ export function PartMesh({
             key={i}
             position={
               gp.pose.length >= 3
-                ? [gp.pose[0], gp.pose[1], gp.pose[2]]
+                ? [gp.pose[0]!, gp.pose[1]!, gp.pose[2]!]
                 : [0, dims[1] ? dims[1] / 2 : 0.02, 0]
             }
             index={i}

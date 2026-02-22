@@ -1,7 +1,7 @@
 """Teleoperation control routes.
 
-Manages a single TeleopLoop instance.  Supports mock mode for testing
-without hardware and real mode (not yet implemented) via arm_registry.
+Manages a single TeleopLoop instance stored on SystemState.  Supports
+mock mode for testing without hardware and real mode via arm_registry.
 """
 
 from __future__ import annotations
@@ -19,21 +19,17 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Module-level singleton — one teleop session at a time.
-_teleop_loop: TeleopLoop | None = None
-_session_id: str | None = None
-_session_arms: list[str] = []
-_session_mock: bool = False
-
 
 # ------------------------------------------------------------------
-# Public accessor (used by recording routes)
+# Public accessor (used by recording routes and e-stop)
 # ------------------------------------------------------------------
 
 
 def get_teleop_loop() -> TeleopLoop | None:
     """Return the current teleop loop instance, or None."""
-    return _teleop_loop
+    from nextis.state import get_state
+
+    return get_state().teleop_loop
 
 
 # ------------------------------------------------------------------
@@ -52,9 +48,11 @@ async def start_teleop(
         request: Body with arm selection.
         mock: If True, use MockRobot + MockLeader instead of real hardware.
     """
-    global _teleop_loop, _session_id, _session_arms, _session_mock  # noqa: PLW0603
+    from nextis.state import get_state
 
-    if _teleop_loop is not None and _teleop_loop.is_running:
+    state = get_state()
+
+    if state.teleop_loop is not None and state.teleop_loop.is_running:
         raise HTTPException(status_code=409, detail="Teleop session already active")
 
     if mock:
@@ -65,7 +63,7 @@ async def start_teleop(
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
-    _teleop_loop = TeleopLoop(
+    loop = TeleopLoop(
         robot=robot,
         leader=leader,
         safety=safety,
@@ -73,37 +71,45 @@ async def start_teleop(
         gripper_ff=gripper_ff,
         joint_ff=joint_ff,
     )
-    _teleop_loop.start()
-    _session_id = str(uuid.uuid4())[:8]
-    _session_arms = request.arms
-    _session_mock = mock
+    loop.start()
 
-    logger.info("Teleop session started: id=%s mock=%s arms=%s", _session_id, mock, request.arms)
-    return {"status": "ok", "sessionId": _session_id}
+    state.teleop_loop = loop
+    state.teleop_session_id = str(uuid.uuid4())[:8]
+    state.teleop_session_arms = request.arms
+    state.teleop_session_mock = mock
+
+    logger.info(
+        "Teleop session started: id=%s mock=%s arms=%s",
+        state.teleop_session_id,
+        mock,
+        request.arms,
+    )
+    return {"status": "ok", "sessionId": state.teleop_session_id}
 
 
 @router.post("/stop")
 async def stop_teleop() -> dict[str, str]:
     """Stop the current teleoperation session."""
-    global _teleop_loop, _session_id  # noqa: PLW0603
+    from nextis.state import get_state
 
-    if _teleop_loop is None or not _teleop_loop.is_running:
+    state = get_state()
+
+    if state.teleop_loop is None or not state.teleop_loop.is_running:
         raise HTTPException(status_code=409, detail="No active teleop session")
 
     # Auto-stop any active recording to prevent orphaned threads.
-    try:
-        from nextis.api.routes.recording import _recorder
-
-        if _recorder is not None and _recorder.is_recording:
-            _recorder.stop()
+    if state.recorder is not None and state.recorder.is_recording:
+        try:
+            state.recorder.stop()
             logger.warning("Auto-stopped recording when teleop stopped")
-    except ImportError:
-        pass
+        except Exception:
+            pass
+        state.recorder = None
 
-    _teleop_loop.stop()
-    old_id = _session_id
-    _teleop_loop = None
-    _session_id = None
+    state.teleop_loop.stop()
+    old_id = state.teleop_session_id
+    state.teleop_loop = None
+    state.teleop_session_id = None
 
     logger.info("Teleop session stopped: id=%s", old_id)
     return {"status": "ok"}
@@ -112,15 +118,19 @@ async def stop_teleop() -> dict[str, str]:
 @router.get("/state", response_model=TeleopState)
 async def get_teleop_state() -> TeleopState:
     """Return current teleop session state."""
-    if _teleop_loop is None or not _teleop_loop.is_running:
+    from nextis.state import get_state
+
+    state = get_state()
+
+    if state.teleop_loop is None or not state.teleop_loop.is_running:
         return TeleopState()
 
     return TeleopState(
         active=True,
-        arms=_session_arms,
-        session_id=_session_id,
-        mock=_session_mock,
-        loop_count=_teleop_loop.loop_count,
+        arms=state.teleop_session_arms,
+        session_id=state.teleop_session_id,
+        mock=state.teleop_session_mock,
+        loop_count=state.teleop_loop.loop_count,
     )
 
 
@@ -196,9 +206,15 @@ def _create_real_stack(arm_selection: list[str]) -> tuple:
     leader = registry.get_arm_instance(pairing.leader_id)
 
     if robot is None or leader is None:
+        missing = []
+        if robot is None:
+            missing.append(f"follower '{pairing.follower_id}'")
+        if leader is None:
+            missing.append(f"leader '{pairing.leader_id}'")
         raise ValueError(
-            f"Arm instances not available for pairing '{pairing.name}'. "
-            "Did connect_arm succeed for both arms?"
+            f"Arm instances not available for {', '.join(missing)} "
+            f"in pairing '{pairing.name}'. "
+            "Ensure connect_arm succeeded (check lerobot availability if it failed)."
         )
 
     safety = SafetyLayer(robot_lock=threading.Lock())

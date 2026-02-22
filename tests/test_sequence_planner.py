@@ -115,16 +115,25 @@ def test_contact_graph_dependencies() -> None:
     """Parts depend on assembly steps of contacted parts, not a linear chain."""
     parts = {
         "base": Part(
-            id="base", position=[0, 0, 0], geometry="box",
-            dimensions=[0.1, 0.05, 0.1], color="#AAA",
+            id="base",
+            position=[0, 0, 0],
+            geometry="box",
+            dimensions=[0.1, 0.05, 0.1],
+            color="#AAA",
         ),
         "part_b": Part(
-            id="part_b", position=[0, 0.02, 0], geometry="box",
-            dimensions=[0.03, 0.03, 0.03], color="#BBB",
+            id="part_b",
+            position=[0, 0.02, 0],
+            geometry="box",
+            dimensions=[0.03, 0.03, 0.03],
+            color="#BBB",
         ),
         "part_c": Part(
-            id="part_c", position=[0, 0.05, 0], geometry="box",
-            dimensions=[0.02, 0.02, 0.02], color="#CCC",
+            id="part_c",
+            position=[0, 0.05, 0],
+            geometry="box",
+            dimensions=[0.02, 0.02, 0.02],
+            color="#CCC",
         ),
     }
     contacts = [
@@ -138,9 +147,7 @@ def test_contact_graph_dependencies() -> None:
     pick_b = next(s for s in planned.steps.values() if s.name == "Pick part_b")
     pick_c = next(s for s in planned.steps.values() if s.name == "Pick part_c")
     asm_b = next(s for s in planned.steps.values() if s.name == "Assemble part_b")
-    base_step = next(
-        s for s in planned.steps.values() if s.name.startswith("Place base")
-    )
+    base_step = next(s for s in planned.steps.values() if s.name.startswith("Place base"))
 
     # part_b's pick depends on base's place step (its only contact)
     assert base_step.id in pick_b.dependencies
@@ -154,20 +161,32 @@ def test_parallel_branches_topological_sort() -> None:
     """Two parts contacting only the base produce a valid parallel DAG."""
     parts = {
         "base": Part(
-            id="base", position=[0, 0, 0], geometry="box",
-            dimensions=[0.1, 0.05, 0.1], color="#AAA",
+            id="base",
+            position=[0, 0, 0],
+            geometry="box",
+            dimensions=[0.1, 0.05, 0.1],
+            color="#AAA",
         ),
         "part_x": Part(
-            id="part_x", position=[0.05, 0.02, 0], geometry="box",
-            dimensions=[0.02, 0.02, 0.02], color="#BBB",
+            id="part_x",
+            position=[0.05, 0.02, 0],
+            geometry="box",
+            dimensions=[0.02, 0.02, 0.02],
+            color="#BBB",
         ),
         "part_y": Part(
-            id="part_y", position=[-0.05, 0.02, 0], geometry="box",
-            dimensions=[0.02, 0.02, 0.02], color="#CCC",
+            id="part_y",
+            position=[-0.05, 0.02, 0],
+            geometry="box",
+            dimensions=[0.02, 0.02, 0.02],
+            color="#CCC",
         ),
         "part_d": Part(
-            id="part_d", position=[0, 0.05, 0], geometry="box",
-            dimensions=[0.02, 0.02, 0.02], color="#DDD",
+            id="part_d",
+            position=[0, 0.05, 0],
+            geometry="box",
+            dimensions=[0.02, 0.02, 0.02],
+            color="#DDD",
         ),
     }
     contacts = [
@@ -202,21 +221,25 @@ def test_isolated_part_defaults_to_base() -> None:
     """Part with no contacts depends on base step."""
     parts = {
         "base": Part(
-            id="base", position=[0, 0, 0], geometry="box",
-            dimensions=[0.1, 0.05, 0.1], color="#AAA",
+            id="base",
+            position=[0, 0, 0],
+            geometry="box",
+            dimensions=[0.1, 0.05, 0.1],
+            color="#AAA",
         ),
         "isolated": Part(
-            id="isolated", position=[0.2, 0, 0], geometry="box",
-            dimensions=[0.02, 0.02, 0.02], color="#BBB",
+            id="isolated",
+            position=[0.2, 0, 0],
+            geometry="box",
+            dimensions=[0.02, 0.02, 0.02],
+            color="#BBB",
         ),
     }
     graph = AssemblyGraph(id="iso_test", name="Iso Test", parts=parts)
     result = ParseResult(graph=graph, contacts=[])
     planned = SequencePlanner().plan(result)
 
-    base_step = next(
-        s for s in planned.steps.values() if s.name.startswith("Place base")
-    )
+    base_step = next(s for s in planned.steps.values() if s.name.startswith("Place base"))
     pick_iso = next(s for s in planned.steps.values() if s.name == "Pick isolated")
     assert base_step.id in pick_iso.dependencies
 
@@ -230,11 +253,15 @@ def test_coaxial_contact_auto_params() -> None:
     """Coaxial contact with clearance >= 0.5mm gets linear_insert + compliance."""
     planner = SequencePlanner()
     part = Part(
-        id="shaft", position=[0.0, 0.05, 0.0],
-        geometry="cylinder", dimensions=[0.005, 0.02], color="#AAA",
+        id="shaft",
+        position=[0.0, 0.05, 0.0],
+        geometry="cylinder",
+        dimensions=[0.005, 0.02],
+        color="#AAA",
     )
     ci = ContactInfo(
-        part_a="housing", part_b="shaft",
+        part_a="housing",
+        part_b="shaft",
         contact_type=ContactType.COAXIAL,
         insertion_axis=[0.0, 1.0, 0.0],
         clearance_mm=1.0,
@@ -256,11 +283,15 @@ def test_planar_contact_gets_place() -> None:
     """All-planar contacts produce a place primitive with auto params."""
     planner = SequencePlanner()
     part = Part(
-        id="cover", position=[0.0, 0.03, 0.0],
-        geometry="box", dimensions=[0.05, 0.002, 0.05], color="#AAA",
+        id="cover",
+        position=[0.0, 0.03, 0.0],
+        geometry="box",
+        dimensions=[0.05, 0.002, 0.05],
+        color="#AAA",
     )
     ci = ContactInfo(
-        part_a="base", part_b="cover",
+        part_a="base",
+        part_b="cover",
         contact_type=ContactType.PLANAR,
         normal=[0.0, 1.0, 0.0],
     )
@@ -280,12 +311,18 @@ def test_cycle_detection_fallback() -> None:
 
     parts = {
         "base": Part(
-            id="base", position=[0, 0, 0], geometry="box",
-            dimensions=[0.1, 0.05, 0.1], color="#AAA",
+            id="base",
+            position=[0, 0, 0],
+            geometry="box",
+            dimensions=[0.1, 0.05, 0.1],
+            color="#AAA",
         ),
         "part_b": Part(
-            id="part_b", position=[0, 0.02, 0], geometry="box",
-            dimensions=[0.03, 0.03, 0.03], color="#BBB",
+            id="part_b",
+            position=[0, 0.02, 0],
+            geometry="box",
+            dimensions=[0.03, 0.03, 0.03],
+            color="#BBB",
         ),
     }
     graph = AssemblyGraph(id="cycle_test", name="Cycle Test", parts=parts)

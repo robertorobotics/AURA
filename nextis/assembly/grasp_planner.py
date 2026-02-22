@@ -124,23 +124,27 @@ class GraspPlanner:
 
         # Grasp closing on Z-dimension (fingers along X)
         if self._min_grasp_width <= d <= self._effective_max:
-            candidates.append(_GraspCandidate(
-                grasp=GraspPoint(
-                    pose=[0.0, half_h, 0.0, 0.0, 0.0, 0.0],
-                    approach=list(_APPROACH_DOWN),
-                ),
-                width=d,
-            ))
+            candidates.append(
+                _GraspCandidate(
+                    grasp=GraspPoint(
+                        pose=[0.0, half_h, 0.0, 0.0, 0.0, 0.0],
+                        approach=list(_APPROACH_DOWN),
+                    ),
+                    width=d,
+                )
+            )
 
         # Grasp closing on X-dimension (fingers along Z)
         if self._min_grasp_width <= w <= self._effective_max:
-            candidates.append(_GraspCandidate(
-                grasp=GraspPoint(
-                    pose=[0.0, half_h, 0.0, 0.0, math.pi / 2, 0.0],
-                    approach=list(_APPROACH_DOWN),
-                ),
-                width=w,
-            ))
+            candidates.append(
+                _GraspCandidate(
+                    grasp=GraspPoint(
+                        pose=[0.0, half_h, 0.0, 0.0, math.pi / 2, 0.0],
+                        approach=list(_APPROACH_DOWN),
+                    ),
+                    width=w,
+                )
+            )
 
         return candidates
 
@@ -167,21 +171,25 @@ class GraspPlanner:
 
         if self._min_grasp_width <= diameter <= self._effective_max:
             # Grasp 1: fingers along X, closing on Z
-            candidates.append(_GraspCandidate(
-                grasp=GraspPoint(
-                    pose=[0.0, half_h, 0.0, 0.0, 0.0, 0.0],
-                    approach=list(_APPROACH_DOWN),
-                ),
-                width=diameter,
-            ))
+            candidates.append(
+                _GraspCandidate(
+                    grasp=GraspPoint(
+                        pose=[0.0, half_h, 0.0, 0.0, 0.0, 0.0],
+                        approach=list(_APPROACH_DOWN),
+                    ),
+                    width=diameter,
+                )
+            )
             # Grasp 2: fingers along Z, closing on X (rotated 90 degrees)
-            candidates.append(_GraspCandidate(
-                grasp=GraspPoint(
-                    pose=[0.0, half_h, 0.0, 0.0, math.pi / 2, 0.0],
-                    approach=list(_APPROACH_DOWN),
-                ),
-                width=diameter,
-            ))
+            candidates.append(
+                _GraspCandidate(
+                    grasp=GraspPoint(
+                        pose=[0.0, half_h, 0.0, 0.0, math.pi / 2, 0.0],
+                        approach=list(_APPROACH_DOWN),
+                    ),
+                    width=diameter,
+                )
+            )
 
         return candidates
 
@@ -195,13 +203,15 @@ class GraspPlanner:
         candidates: list[_GraspCandidate] = []
 
         if self._min_grasp_width <= h <= self._effective_max:
-            candidates.append(_GraspCandidate(
-                grasp=GraspPoint(
-                    pose=[0.0, half_h, 0.0, 0.0, 0.0, 0.0],
-                    approach=list(_APPROACH_DOWN),
-                ),
-                width=h,
-            ))
+            candidates.append(
+                _GraspCandidate(
+                    grasp=GraspPoint(
+                        pose=[0.0, half_h, 0.0, 0.0, 0.0, 0.0],
+                        approach=list(_APPROACH_DOWN),
+                    ),
+                    width=h,
+                )
+            )
 
         return candidates
 
@@ -212,12 +222,14 @@ class GraspPlanner:
         candidates: list[_GraspCandidate] = []
 
         if self._min_grasp_width <= diameter <= self._effective_max:
-            candidates.append(_GraspCandidate(
-                grasp=GraspPoint(
-                    pose=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    approach=list(_APPROACH_DOWN),
-                ),
-                width=diameter,
-            ))
+            candidates.append(
+                _GraspCandidate(
+                    grasp=GraspPoint(
+                        pose=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                        approach=list(_APPROACH_DOWN),
+                    ),
+                    width=diameter,
+                )
+            )
 
         return candidates

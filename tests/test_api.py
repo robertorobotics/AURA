@@ -71,11 +71,15 @@ def isolated_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     # Write fixture assembly
     (configs_dir / "test_assembly.json").write_text(json.dumps(_test_assembly_data(), indent=2))
 
-    # Monkeypatch route-module directory constants
+    # Monkeypatch centralized config paths and route-module aliases
     import nextis.api.routes.analytics as analytics_mod
     import nextis.api.routes.assembly as asm_mod
     import nextis.api.routes.execution as exec_mod
+    import nextis.config as config_mod
+    import nextis.state as state_mod
 
+    monkeypatch.setattr(config_mod, "ASSEMBLIES_DIR", configs_dir)
+    monkeypatch.setattr(config_mod, "ANALYTICS_DIR", analytics_dir)
     monkeypatch.setattr(asm_mod, "CONFIGS_DIR", configs_dir)
     monkeypatch.setattr(exec_mod, "CONFIGS_DIR", configs_dir)
     monkeypatch.setattr(exec_mod, "ANALYTICS_DIR", analytics_dir)
@@ -85,6 +89,9 @@ def isolated_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     # Reset module-level sequencer state
     monkeypatch.setattr(exec_mod, "_sequencer", None)
     monkeypatch.setattr(exec_mod, "_analytics_store", None)
+
+    # Reset SystemState singleton to prevent cross-test pollution
+    monkeypatch.setattr(state_mod, "_state", None)
 
     from nextis.api.app import app
 

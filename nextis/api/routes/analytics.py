@@ -6,20 +6,18 @@ Reads from the AnalyticsStore to return computed metrics per step.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
 from nextis.analytics.store import AnalyticsStore
 from nextis.api.schemas import StepMetrics
 from nextis.assembly.models import AssemblyGraph
+from nextis.config import ANALYTICS_DIR
+from nextis.config import ASSEMBLIES_DIR as CONFIGS_DIR
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-CONFIGS_DIR = Path(__file__).resolve().parents[3] / "configs" / "assemblies"
-ANALYTICS_DIR = Path(__file__).resolve().parents[3] / "data" / "analytics"
 
 
 @router.get("/{assembly_id}/steps", response_model=list[StepMetrics])

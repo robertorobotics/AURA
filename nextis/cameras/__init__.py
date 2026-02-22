@@ -1,0 +1,1 @@
+"""Camera capture and management."""

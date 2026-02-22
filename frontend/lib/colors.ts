@@ -47,7 +47,7 @@ export function buildVisibilityColorMap(
   const colorMap: Record<string, string> = {};
   let colorIdx = 0;
   for (const [, ids] of baseToIds) {
-    const color = VISIBILITY_PALETTE[colorIdx % VISIBILITY_PALETTE.length];
+    const color = VISIBILITY_PALETTE[colorIdx % VISIBILITY_PALETTE.length]!;
     for (const id of ids) {
       colorMap[id] = color;
     }

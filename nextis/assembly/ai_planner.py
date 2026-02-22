@@ -169,14 +169,8 @@ def _spatial_summary(graph: AssemblyGraph) -> str:
     )
 
     lines.append(f"## Part Catalog ({len(graph.parts)} parts)")
-    lines.append(
-        "| ID | Geometry | Shape Class | Dimensions (mm) "
-        "| Position (mm) | Volume (mm3) |"
-    )
-    lines.append(
-        "|----|----------|-------------|-----------------|"
-        "---------------|-------------|"
-    )
+    lines.append("| ID | Geometry | Shape Class | Dimensions (mm) | Position (mm) | Volume (mm3) |")
+    lines.append("|----|----------|-------------|-----------------|---------------|-------------|")
 
     for p in parts_sorted:
         pos = p.position or [0.0, 0.0, 0.0]
@@ -199,10 +193,7 @@ def _spatial_summary(graph: AssemblyGraph) -> str:
             p1, p2 = part_list[i], part_list[j]
             if p1.position and p2.position:
                 dist_m = math.sqrt(
-                    sum(
-                        (a - b) ** 2
-                        for a, b in zip(p1.position, p2.position, strict=False)
-                    )
+                    sum((a - b) ** 2 for a, b in zip(p1.position, p2.position, strict=False))
                 )
                 dist_mm = dist_m * 1000
                 if dist_mm < _PROXIMITY_THRESHOLD_MM:
@@ -320,9 +311,7 @@ class AIPlanner:
         try:
             from anthropic import AsyncAnthropic
         except ImportError as e:
-            raise PlannerError(
-                "anthropic package not installed. Run: pip install anthropic"
-            ) from e
+            raise PlannerError("anthropic package not installed. Run: pip install anthropic") from e
 
         prompt = self._build_prompt(graph)
 
@@ -371,9 +360,7 @@ class AIPlanner:
         try:
             from anthropic import Anthropic
         except ImportError as e:
-            raise PlannerError(
-                "anthropic package not installed. Run: pip install anthropic"
-            ) from e
+            raise PlannerError("anthropic package not installed. Run: pip install anthropic") from e
 
         prompt = self._build_prompt(graph)
 
@@ -493,8 +480,6 @@ Focus on:
             suggestions=suggestions,
             warnings=data.get("warnings", []),
             difficulty_score=max(1, min(10, int(data.get("difficultyScore", 5)))),
-            estimated_teaching_minutes=max(
-                0, int(data.get("estimatedTeachingMinutes", 0))
-            ),
+            estimated_teaching_minutes=max(0, int(data.get("estimatedTeachingMinutes", 0))),
             summary=data.get("summary", ""),
         )

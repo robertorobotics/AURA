@@ -66,13 +66,9 @@ class ReplayBuffer:
             # Remove old index from tracking lists
             old = self._buffer[idx]
             if old.is_intervention:
-                self._intervention_indices = [
-                    i for i in self._intervention_indices if i != idx
-                ]
+                self._intervention_indices = [i for i in self._intervention_indices if i != idx]
             else:
-                self._autonomous_indices = [
-                    i for i in self._autonomous_indices if i != idx
-                ]
+                self._autonomous_indices = [i for i in self._autonomous_indices if i != idx]
             self._buffer[idx] = transition
             self._pos = (self._pos + 1) % self._capacity
 
@@ -97,15 +93,11 @@ class ReplayBuffer:
             ValueError: If buffer has fewer transitions than batch_size.
         """
         if len(self._buffer) < batch_size:
-            raise ValueError(
-                f"Buffer has {len(self._buffer)} transitions, need {batch_size}"
-            )
+            raise ValueError(f"Buffer has {len(self._buffer)} transitions, need {batch_size}")
         indices = random.sample(range(len(self._buffer)), batch_size)
         return [self._buffer[i] for i in indices]
 
-    def sample_mixed(
-        self, batch_size: int, intervention_ratio: float = 0.25
-    ) -> list[Transition]:
+    def sample_mixed(self, batch_size: int, intervention_ratio: float = 0.25) -> list[Transition]:
         """Sample a batch with a minimum fraction of intervention transitions.
 
         Ensures at least ``intervention_ratio`` of the batch comes from
@@ -123,9 +115,7 @@ class ReplayBuffer:
             ValueError: If buffer has fewer transitions than batch_size.
         """
         if len(self._buffer) < batch_size:
-            raise ValueError(
-                f"Buffer has {len(self._buffer)} transitions, need {batch_size}"
-            )
+            raise ValueError(f"Buffer has {len(self._buffer)} transitions, need {batch_size}")
 
         n_intervention = int(batch_size * intervention_ratio)
 
@@ -139,19 +129,13 @@ class ReplayBuffer:
         # If not enough autonomous, pull more from intervention
         if actual_autonomous > avail_autonomous:
             actual_autonomous = avail_autonomous
-            actual_intervention = min(
-                batch_size - actual_autonomous, avail_intervention
-            )
+            actual_intervention = min(batch_size - actual_autonomous, avail_intervention)
 
         indices: list[int] = []
         if actual_intervention > 0:
-            indices.extend(
-                random.sample(self._intervention_indices, actual_intervention)
-            )
+            indices.extend(random.sample(self._intervention_indices, actual_intervention))
         if actual_autonomous > 0:
-            indices.extend(
-                random.sample(self._autonomous_indices, actual_autonomous)
-            )
+            indices.extend(random.sample(self._autonomous_indices, actual_autonomous))
 
         # Fill remainder if both pools are small
         remaining = batch_size - len(indices)

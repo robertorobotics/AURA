@@ -99,9 +99,7 @@ class StepRewardComputer:
             +10.0 scaled by confidence if passed, -1.0 scaled by confidence
             if failed.
         """
-        result: VerificationResult = await self._verifier.verify(
-            self._step, exec_data
-        )
+        result: VerificationResult = await self._verifier.verify(self._step, exec_data)
 
         terminal = 10.0 * result.confidence if result.passed else -1.0 * result.confidence
 

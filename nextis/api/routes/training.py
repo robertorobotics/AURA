@@ -1,120 +1,127 @@
-"""Training routes — per-step policy training with real ACT pipeline.
+"""Training routes — per-step policy training with real pipeline.
 
-Launches background training tasks that build datasets from HDF5 demos,
-train a MinimalACT policy, and save checkpoints. Job progress is tracked
-in-memory and queryable via GET endpoints.
+Supports ACT, Diffusion, and PI0.5 (flow matching) architectures.
+Jobs are persisted to disk and survive server restarts. Cancellation
+is supported via inter-epoch flag checking.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-import uuid
 
 from fastapi import APIRouter, HTTPException
 
-from nextis.api.schemas import TrainingJobState, TrainRequest
+from nextis.api.schemas import TrainingJobState, TrainingPresetResponse, TrainRequest
+from nextis.config import DEMOS_DIR, POLICIES_DIR, TRAINING_JOBS_DIR
 from nextis.errors import TrainingError
-from nextis.learning.dataset import StepDataset
-from nextis.learning.trainer import PolicyTrainer, TrainingConfig, TrainingProgress
+from nextis.learning.training_service import PRESETS, TrainingJob, TrainingService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# In-memory job registry.
-_jobs: dict[str, TrainingJobState] = {}
+_service: TrainingService | None = None
 
 
-async def _run_training(job: TrainingJobState, step_id: str, request: TrainRequest) -> None:
-    """Background coroutine that runs the full training pipeline.
+def _get_service() -> TrainingService:
+    """Lazy-init the TrainingService singleton."""
+    global _service  # noqa: PLW0603
+    if _service is None:
+        _service = TrainingService(TRAINING_JOBS_DIR, DEMOS_DIR, POLICIES_DIR)
+        _service.load_jobs_from_disk()
+    return _service
 
-    Updates the job object in-place with progress, status, and result.
-    """
-    try:
-        job.status = "running"
-        job.progress = 0.0
 
-        # Build dataset from recorded demos
-        logger.info("Building dataset for %s/%s", request.assembly_id, step_id)
-        dataset = StepDataset(request.assembly_id, step_id)
-        info = dataset.build()
-
-        # Map num_steps to epochs (rough heuristic: 1 epoch ≈ 100 steps)
-        num_epochs = max(10, request.num_steps // 100)
-
-        config = TrainingConfig(num_epochs=num_epochs)
-
-        def on_progress(p: TrainingProgress) -> None:
-            job.progress = (p.epoch + 1) / p.total_epochs
-
-        # Train
-        logger.info("Starting training: %d epochs", num_epochs)
-        trainer = PolicyTrainer()
-        result = await trainer.train(info, config=config, on_progress=on_progress)
-
-        job.status = "completed"
-        job.progress = 1.0
-        job.checkpoint_path = str(result.checkpoint_path)
-        logger.info("Training complete: %s (loss=%.6f)", result.checkpoint_path, result.final_loss)
-
-    except TrainingError as e:
-        logger.error("Training failed for %s/%s: %s", request.assembly_id, step_id, e)
-        job.status = "failed"
-        job.error = str(e)
-
-    except Exception as e:
-        logger.error("Unexpected training error: %s", e, exc_info=True)
-        job.status = "failed"
-        job.error = str(e)
+def _job_to_schema(job: TrainingJob) -> TrainingJobState:
+    """Convert a TrainingJob to the API schema."""
+    return TrainingJobState(
+        job_id=job.job_id,
+        step_id=job.step_id,
+        status=job.status,
+        progress=job.progress,
+        loss=job.loss,
+        val_loss=job.val_loss,
+        error=job.error,
+        checkpoint_path=job.checkpoint_path,
+    )
 
 
 @router.post("/step/{step_id}/train")
 async def start_training(step_id: str, request: TrainRequest) -> TrainingJobState:
     """Launch a training job for a specific assembly step.
 
-    Builds a dataset from recorded HDF5 demos, trains a MinimalACT policy,
-    and saves the checkpoint. Training runs as a background task.
+    Builds a dataset from recorded HDF5 demos, trains a policy using
+    the specified architecture, and saves the checkpoint. Training
+    runs as a background task.
 
     Args:
         step_id: Assembly step to train a policy for.
         request: Training configuration (architecture, num_steps, assembly_id).
     """
-    job_id = str(uuid.uuid4())[:8]
+    service = _get_service()
 
-    job = TrainingJobState(
-        job_id=job_id,
-        step_id=step_id,
-        status="pending",
-        progress=0.0,
-    )
-    _jobs[job_id] = job
+    try:
+        job = service.start_training(
+            step_id=step_id,
+            assembly_id=request.assembly_id,
+            architecture=request.architecture,
+            num_steps=request.num_steps,
+        )
+    except TrainingError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     logger.info(
-        "Training job created: job=%s step=%s arch=%s steps=%d assembly=%s",
-        job_id,
+        "Training job created: job=%s step=%s arch=%s assembly=%s",
+        job.job_id,
         step_id,
         request.architecture,
-        request.num_steps,
         request.assembly_id,
     )
 
     # Launch training in background
-    asyncio.create_task(_run_training(job, step_id, request))
+    asyncio.create_task(service.run_training(job))
 
-    return job
+    return _job_to_schema(job)
 
 
 @router.get("/jobs/{job_id}")
 async def get_training_job(job_id: str) -> TrainingJobState:
     """Get the status of a training job."""
-    job = _jobs.get(job_id)
+    service = _get_service()
+    job = service.get_job(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail=f"Training job '{job_id}' not found")
-    return job
+    return _job_to_schema(job)
 
 
 @router.get("/jobs", response_model=list[TrainingJobState])
 async def list_training_jobs() -> list[TrainingJobState]:
     """List all training jobs."""
-    return list(_jobs.values())
+    service = _get_service()
+    return [_job_to_schema(j) for j in service.list_jobs()]
+
+
+@router.post("/jobs/{job_id}/cancel")
+async def cancel_training_job(job_id: str) -> dict:
+    """Cancel a running training job.
+
+    The job will be cancelled at the next epoch boundary.
+    """
+    service = _get_service()
+    cancelled = service.cancel_job(job_id)
+    if not cancelled:
+        job = service.get_job(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Training job '{job_id}' not found")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job '{job_id}' is not running (status: {job.status})",
+        )
+    return {"cancelled": True, "job_id": job_id}
+
+
+@router.get("/presets", response_model=list[TrainingPresetResponse])
+async def get_training_presets() -> list[TrainingPresetResponse]:
+    """List available training presets."""
+    return [TrainingPresetResponse(**preset) for preset in PRESETS.values()]

@@ -147,8 +147,76 @@ class TrainingJobState(BaseModel):
     step_id: str = Field(alias="stepId")
     status: str = "pending"
     progress: float = 0.0
+    loss: float | None = None
+    val_loss: float | None = Field(None, alias="valLoss")
     error: str | None = None
     checkpoint_path: str | None = Field(None, alias="checkpointPath")
+
+
+# ------------------------------------------------------------------
+# Dataset schemas
+# ------------------------------------------------------------------
+
+
+class DatasetDemoInfo(BaseModel):
+    """Metadata about a single recorded demonstration."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    demo_id: str = Field(alias="demoId")
+    num_frames: int = Field(0, alias="numFrames")
+    duration_s: float = Field(0.0, alias="durationS")
+    has_images: bool = Field(False, alias="hasImages")
+    timestamp: float = 0.0
+    file_size_bytes: int = Field(0, alias="fileSizeBytes")
+
+
+class DatasetSummary(BaseModel):
+    """Summary of all demos for a step."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    assembly_id: str = Field(alias="assemblyId")
+    step_id: str = Field(alias="stepId")
+    demo_count: int = Field(0, alias="demoCount")
+    total_frames: int = Field(0, alias="totalFrames")
+    demos: list[DatasetDemoInfo] = Field(default_factory=list)
+
+
+# ------------------------------------------------------------------
+# Policy schemas
+# ------------------------------------------------------------------
+
+
+class PolicyInfoResponse(BaseModel):
+    """Metadata about a trained policy checkpoint."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    policy_id: str = Field(alias="policyId")
+    policy_type: str = Field(alias="policyType")
+    checkpoint_path: str = Field(alias="checkpointPath")
+    created_at: float = Field(0.0, alias="createdAt")
+    architecture: str = "act"
+
+
+class DeployRequest(BaseModel):
+    """Request to deploy a policy for a step."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    policy_type: str = Field(alias="policyType")
+
+
+class TrainingPresetResponse(BaseModel):
+    """A training preset configuration."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str
+    description: str
+    architecture: str
+    config: dict
 
 
 # ------------------------------------------------------------------
@@ -226,11 +294,105 @@ class HardwareStatusResponse(BaseModel):
 
 
 class ConnectRequest(BaseModel):
-    """Request to connect or disconnect a single arm."""
+    """Request to connect or disconnect a single arm (legacy body-based)."""
 
     model_config = ConfigDict(populate_by_name=True)
 
     arm_id: str = Field(alias="armId")
+
+
+class AddArmRequest(BaseModel):
+    """Request body for adding a new arm to the registry."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    name: str
+    role: str
+    motor_type: str = Field(alias="motorType")
+    port: str
+    enabled: bool = True
+    structural_design: str | None = Field(None, alias="structuralDesign")
+    config: dict = Field(default_factory=dict)
+
+
+class UpdateArmRequest(BaseModel):
+    """Request body for updating arm properties. All fields optional."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str | None = None
+    port: str | None = None
+    enabled: bool | None = None
+    structural_design: str | None = Field(None, alias="structuralDesign")
+    config: dict | None = None
+
+
+class CreatePairingRequest(BaseModel):
+    """Request body for creating a leader-follower pairing."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    leader_id: str = Field(alias="leaderId")
+    follower_id: str = Field(alias="followerId")
+    name: str | None = None
+
+
+class RemovePairingRequest(BaseModel):
+    """Request body for removing a pairing."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    leader_id: str = Field(alias="leaderId")
+    follower_id: str = Field(alias="followerId")
+
+
+class ScanMotorsRequest(BaseModel):
+    """Request body for scanning motors on a specific port."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    port: str
+    motor_type: str = Field(alias="motorType")
+    baud_rates: list[int] | None = Field(None, alias="baudRates")
+
+
+class PortInfoResponse(BaseModel):
+    """A discovered serial port."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    port: str
+    description: str
+    hardware_id: str = Field(alias="hardwareId")
+    in_use: bool = Field(False, alias="inUse")
+
+
+class MotorDiagnosticsResponse(BaseModel):
+    """Diagnostics for a single motor on a connected arm."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    motor_id: int = Field(alias="motorId")
+    name: str
+    position: float | None = None
+    velocity: float | None = None
+    temperature_c: float | None = Field(None, alias="temperatureC")
+    current_ma: float | None = Field(None, alias="currentMa")
+    voltage_v: float | None = Field(None, alias="voltageV")
+    error_flags: int = Field(0, alias="errorFlags")
+    error_description: str = Field("", alias="errorDescription")
+
+
+class DiscoveredMotorResponse(BaseModel):
+    """A motor found during a port scan."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    motor_id: int = Field(alias="motorId")
+    motor_type: str = Field(alias="motorType")
+    baud_rate: int = Field(alias="baudRate")
+    model_number: int | None = Field(None, alias="modelNumber")
 
 
 # ------------------------------------------------------------------
@@ -247,6 +409,48 @@ class HomingStartRequest(BaseModel):
     home_pos: dict[str, float] | None = Field(None, alias="homePos")
     duration: float = 10.0
     velocity: float = 0.05
+
+
+# ------------------------------------------------------------------
+# Calibration schemas
+# ------------------------------------------------------------------
+
+
+class CalibrationStatusResponse(BaseModel):
+    """Calibration profile status for an arm."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    arm_id: str = Field(alias="armId")
+    has_zeros: bool = Field(False, alias="hasZeros")
+    has_ranges: bool = Field(False, alias="hasRanges")
+    has_inversions: bool = Field(False, alias="hasInversions")
+    has_gravity: bool = Field(False, alias="hasGravity")
+    range_discovery_active: bool = Field(False, alias="rangeDiscoveryActive")
+    range_discovery_progress: float = Field(0.0, alias="rangeDiscoveryProgress")
+    range_discovery_joint: str | None = Field(None, alias="rangeDiscoveryJoint")
+
+
+class CalibrationProfileResponse(BaseModel):
+    """Full calibration profile data."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    arm_id: str = Field(alias="armId")
+    zeros: dict[str, float] = Field(default_factory=dict)
+    ranges: dict[str, dict[str, float]] = Field(default_factory=dict)
+    inversions: dict[str, bool] = Field(default_factory=dict)
+    gravity: dict[str, list[float]] | None = None
+
+
+class RangeDiscoveryRequest(BaseModel):
+    """Optional parameters for range discovery."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    speed: float = 0.1
+    duration_per_joint: float = Field(10.0, alias="durationPerJoint")
+    joints: list[str] | None = None
 
 
 # ------------------------------------------------------------------
@@ -285,6 +489,31 @@ class RLTrainingState(BaseModel):
 # ------------------------------------------------------------------
 
 
+# ------------------------------------------------------------------
+# Camera schemas
+# ------------------------------------------------------------------
+
+
+class CameraConfigRequest(BaseModel):
+    """Request body for adding/updating a camera configuration."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    key: str
+    camera_type: str = Field("opencv", alias="cameraType")
+    index_or_path: str | int = Field(0, alias="indexOrPath")
+    width: int = 640
+    height: int = 480
+    fps: int = 30
+    serial_number_or_name: str = Field("", alias="serialNumberOrName")
+    use_depth: bool = Field(False, alias="useDepth")
+
+
+# ------------------------------------------------------------------
+# Upload progress schemas
+# ------------------------------------------------------------------
+
+
 class UploadProgressEvent(BaseModel):
     """A single progress event emitted during STEP upload processing."""
 
@@ -295,3 +524,81 @@ class UploadProgressEvent(BaseModel):
     detail: str | None = None
     progress: float | None = None
     assembly: dict[str, Any] | None = None
+
+
+# ------------------------------------------------------------------
+# Tool / Trigger schemas
+# ------------------------------------------------------------------
+
+
+class AddToolRequest(BaseModel):
+    """Request body for adding a new tool."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    name: str
+    motor_type: str = Field(alias="motorType")
+    port: str
+    motor_id: int = Field(alias="motorId")
+    tool_type: str = Field("custom", alias="toolType")
+    enabled: bool = True
+    config: dict = Field(default_factory=dict)
+
+
+class UpdateToolRequest(BaseModel):
+    """Request body for updating tool properties. All fields optional."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str | None = None
+    port: str | None = None
+    motor_id: int | None = Field(None, alias="motorId")
+    enabled: bool | None = None
+    config: dict | None = None
+
+
+class AddTriggerRequest(BaseModel):
+    """Request body for adding a new trigger device."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    name: str
+    trigger_type: str = Field("gpio_switch", alias="triggerType")
+    port: str
+    pin: int = 0
+    active_low: bool = Field(True, alias="activeLow")
+    enabled: bool = True
+
+
+class UpdateTriggerRequest(BaseModel):
+    """Request body for updating trigger properties. All fields optional."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str | None = None
+    port: str | None = None
+    pin: int | None = None
+    active_low: bool | None = Field(None, alias="activeLow")
+    enabled: bool | None = None
+
+
+class CreateToolPairingRequest(BaseModel):
+    """Request body for creating a trigger-to-tool pairing."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    trigger_id: str = Field(alias="triggerId")
+    tool_id: str = Field(alias="toolId")
+    name: str | None = None
+    action: str = "toggle"
+
+
+class RemoveToolPairingRequest(BaseModel):
+    """Request body for removing a trigger-to-tool pairing."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    trigger_id: str = Field(alias="triggerId")
+    tool_id: str = Field(alias="toolId")

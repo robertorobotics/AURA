@@ -3,9 +3,13 @@
 Usage:
     python scripts/validate_hardware.py --arm-id aira_zero --mock
     python scripts/validate_hardware.py --arm-id aira_zero --port can0
+    python scripts/validate_hardware.py --check-only
 
 Runs 5 motion primitives in sequence, logs results, and writes a JSON summary
 to ``data/hardware_validation/{arm_id}_{timestamp}.json``.
+
+With ``--check-only``, validates connectivity for all configured arms without
+running primitives.
 
 Exit code 0 if all primitives succeed, 1 if any fail.
 """
@@ -14,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -21,10 +26,14 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-# Ensure project root is on PYTHONPATH
+# Ensure project root and lerobot/src are on PYTHONPATH
 PROJECT_ROOT = str(Path(__file__).resolve().parents[1])
+LEROBOT_SRC = str(Path(__file__).resolve().parents[1] / "lerobot" / "src")
 sys.path.insert(0, PROJECT_ROOT)
-os.environ["PYTHONPATH"] = PROJECT_ROOT + os.pathsep + os.environ.get("PYTHONPATH", "")
+sys.path.insert(0, LEROBOT_SRC)
+os.environ["PYTHONPATH"] = (
+    LEROBOT_SRC + os.pathsep + PROJECT_ROOT + os.pathsep + os.environ.get("PYTHONPATH", "")
+)
 
 from nextis.control.motion_helpers import PrimitiveResult  # noqa: E402
 from nextis.control.primitives import PrimitiveLibrary  # noqa: E402
@@ -252,6 +261,132 @@ async def _run_validation(args: argparse.Namespace) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Check-only mode: validate connectivity without running primitives
+# ---------------------------------------------------------------------------
+
+
+def _run_check_only() -> bool:
+    """Check connectivity for all configured arms.
+
+    Loads the config, lists configured arms, checks port availability,
+    attempts to connect each arm, and reads joint positions.
+
+    Returns:
+        True if all enabled arms connected successfully.
+    """
+    from nextis.config import load_config
+    from nextis.hardware.arm_registry import ArmRegistryService
+
+    # 1. Check lerobot availability
+    try:
+        import lerobot  # noqa: F401
+
+        logger.info("[OK] lerobot available (from %s)", lerobot.__file__)
+    except ImportError:
+        logger.error("[FAIL] lerobot not importable — check PYTHONPATH")
+        return False
+
+    # 2. Load config
+    config = load_config()
+    arms_cfg = config.get("arms", {})
+    pairings_cfg = config.get("pairings", [])
+
+    if not arms_cfg:
+        logger.warning("No arms configured in settings.yaml")
+        return True
+
+    logger.info("Found %d arm(s), %d pairing(s)", len(arms_cfg), len(pairings_cfg))
+
+    # 3. Check CAN bus (if any Damiao arms)
+    damiao_ports = {
+        v.get("port", "can0")
+        for v in arms_cfg.values()
+        if v.get("motor_type") == "damiao"
+    }
+    for port in damiao_ports:
+        can_state_path = f"/sys/class/net/{port}/operstate"
+        try:
+            with open(can_state_path) as f:
+                state = f.read().strip()
+            if state in ("up", "unknown"):
+                logger.info("[OK] CAN interface %s is %s", port, state)
+            else:
+                logger.error(
+                    "[FAIL] CAN interface %s is %s — run: sudo bash scripts/setup_can.sh %s",
+                    port, state, port,
+                )
+        except FileNotFoundError:
+            logger.error(
+                "[FAIL] CAN interface %s not found — run: sudo bash scripts/setup_can.sh %s",
+                port, port,
+            )
+
+    # 4. Check serial ports (Dynamixel/Feetech)
+    serial_ports = {
+        v.get("port", "")
+        for v in arms_cfg.values()
+        if v.get("motor_type") in ("dynamixel_xl330", "dynamixel_xl430", "sts3215")
+    }
+    for port in serial_ports:
+        if not port:
+            continue
+        if Path(port).exists():
+            logger.info("[OK] Serial port %s exists", port)
+        else:
+            logger.error("[FAIL] Serial port %s not found — check USB connection", port)
+
+    # 5. Attempt to connect each enabled arm
+    registry = ArmRegistryService()
+    all_ok = True
+
+    for arm_id, arm_cfg in arms_cfg.items():
+        if not arm_cfg.get("enabled", True):
+            logger.info("[SKIP] %s (disabled)", arm_id)
+            continue
+
+        arm = registry.get_arm(arm_id)
+        if arm is None:
+            logger.error("[FAIL] %s not in registry", arm_id)
+            all_ok = False
+            continue
+
+        try:
+            result = registry.connect_arm(arm_id)
+            if result.get("success"):
+                logger.info(
+                    "[OK] %s connected (%s on %s)",
+                    arm_id, arm_cfg.get("motor_type"), arm_cfg.get("port"),
+                )
+            else:
+                logger.error("[FAIL] %s: %s", arm_id, result.get("error", "unknown"))
+                all_ok = False
+                continue
+        except Exception as e:
+            logger.error("[FAIL] %s: %s", arm_id, e)
+            all_ok = False
+            continue
+
+        # 6. Read joint positions
+        instance = registry.get_arm_instance(arm_id)
+        if instance is not None and hasattr(instance, "get_observation"):
+            try:
+                obs = instance.get_observation()
+                positions = {k: round(v, 3) for k, v in obs.items() if ".pos" in k}
+                logger.info("  Joints: %s", positions)
+            except Exception as e:
+                logger.warning("  Could not read joints: %s", e)
+
+    # 7. Disconnect all
+    for arm_id in list(registry.arm_instances.keys()):
+        with contextlib.suppress(Exception):
+            registry.disconnect_arm(arm_id)
+
+    logger.info("---")
+    logger.info("Overall: %s", "PASS" if all_ok else "FAIL")
+    return all_ok
+
+
+# ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
 
@@ -276,6 +411,11 @@ def main() -> None:
         action="store_true",
         help="Use MockRobot instead of real hardware.",
     )
+    parser.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Check connectivity for all configured arms without running primitives.",
+    )
 
     args = parser.parse_args()
 
@@ -284,7 +424,7 @@ def main() -> None:
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     )
 
-    passed = asyncio.run(_run_validation(args))
+    passed = _run_check_only() if args.check_only else asyncio.run(_run_validation(args))
     sys.exit(0 if passed else 1)
 
 

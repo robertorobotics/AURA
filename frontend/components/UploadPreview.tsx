@@ -111,6 +111,7 @@ export function UploadPreview({ assembly }: UploadPreviewProps) {
             selectedStepId={null}
             firstStepIdForPart={null}
             wireframeOverlay={false}
+            colorMode="original"
             onClick={() => {}}
           />
         ))}

@@ -22,6 +22,8 @@ from fastapi.responses import StreamingResponse
 
 from nextis.api.schemas import AssemblySummary, PlanAnalysisResponse, PlanSuggestionResponse
 from nextis.assembly.models import AssemblyGraph
+from nextis.config import ASSEMBLIES_DIR as CONFIGS_DIR
+from nextis.config import MESHES_DIR, OVERRIDES_DIR
 from nextis.errors import CADParseError, PlannerError
 
 logger = logging.getLogger(__name__)
@@ -35,10 +37,6 @@ except Exception:
     HAS_PARSER = False
 
 router = APIRouter()
-
-CONFIGS_DIR = Path(__file__).resolve().parents[3] / "configs" / "assemblies"
-MESHES_DIR = Path(__file__).resolve().parents[3] / "data" / "meshes"
-OVERRIDES_DIR = Path(__file__).resolve().parents[3] / "configs" / "overrides"
 
 
 def _find_assembly_path(assembly_id: str) -> Path:

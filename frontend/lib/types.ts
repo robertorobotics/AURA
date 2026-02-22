@@ -108,8 +108,9 @@ export interface StepMetrics {
 }
 
 export interface TrainConfig {
-  architecture: "act" | "diffusion" | "smolvla";
+  architecture: "act" | "diffusion" | "pi0";
   numSteps: number;
+  assemblyId: string;
 }
 
 export interface TrainStatus {
@@ -117,7 +118,40 @@ export interface TrainStatus {
   stepId: string;
   progress: number;
   loss: number | null;
-  state: "queued" | "training" | "complete" | "failed";
+  valLoss: number | null;
+  state: "queued" | "training" | "complete" | "failed" | "cancelled";
+}
+
+export interface DatasetDemoInfo {
+  demoId: string;
+  numFrames: number;
+  durationS: number;
+  hasImages: boolean;
+  timestamp: number;
+  fileSizeBytes: number;
+}
+
+export interface DatasetSummary {
+  assemblyId: string;
+  stepId: string;
+  demoCount: number;
+  totalFrames: number;
+  demos: DatasetDemoInfo[];
+}
+
+export interface PolicyInfo {
+  policyId: string;
+  policyType: "bc" | "rl";
+  checkpointPath: string;
+  createdAt: number;
+  architecture: string;
+}
+
+export interface TrainingPreset {
+  name: string;
+  description: string;
+  architecture: string;
+  config: Record<string, unknown>;
 }
 
 export interface Demo {
@@ -185,4 +219,144 @@ export interface HardwareStatus {
   disconnected: number;
   leaders: number;
   followers: number;
+}
+
+// Camera types
+export interface CameraConfig {
+  type: string;
+  indexOrPath: string | number;
+  width: number;
+  height: number;
+  fps: number;
+  serialNumberOrName: string;
+  useDepth: boolean;
+}
+
+export interface CameraStatus {
+  connected: boolean;
+  fps: number;
+  resolution: [number, number];
+  error: string | null;
+}
+
+export interface DiscoveredCamera {
+  devicePath: string;
+  name: string;
+  cameraType: string;
+  isRealsense: boolean;
+}
+
+// Tool & trigger types
+export interface ToolInfo {
+  id: string;
+  name: string;
+  motorType: string;
+  port: string;
+  motorId: number;
+  toolType: string;
+  enabled: boolean;
+  status: ConnectionStatus;
+  config: Record<string, unknown>;
+}
+
+export interface TriggerInfo {
+  id: string;
+  name: string;
+  triggerType: string;
+  port: string;
+  pin: number;
+  activeLow: boolean;
+  enabled: boolean;
+  status: ConnectionStatus;
+}
+
+export interface ToolPairingInfo {
+  triggerId: string;
+  toolId: string;
+  name: string;
+  action: string;
+}
+
+// Port discovery
+export interface PortInfo {
+  port: string;
+  description: string;
+  hardwareId: string;
+  inUse: boolean;
+}
+
+// System status
+export interface SystemStatus {
+  phase: string;
+  error: string | null;
+  totalArms: number;
+  connected: number;
+  disconnected: number;
+  leaders: number;
+  followers: number;
+  teleopActive: boolean;
+  recording: boolean;
+  camerasConnected: number;
+}
+
+// API payloads (form submissions)
+export interface AddArmPayload {
+  id: string;
+  name: string;
+  role: "leader" | "follower";
+  motorType: string;
+  port: string;
+  enabled: boolean;
+  structuralDesign: string | null;
+}
+
+export interface CameraConfigPayload {
+  key: string;
+  cameraType: string;
+  indexOrPath: string | number;
+  width: number;
+  height: number;
+  fps: number;
+  serialNumberOrName: string;
+  useDepth: boolean;
+}
+
+export interface AddToolPayload {
+  id: string;
+  name: string;
+  motorType: string;
+  port: string;
+  motorId: number;
+  toolType: string;
+  enabled: boolean;
+}
+
+export interface AddTriggerPayload {
+  id: string;
+  name: string;
+  triggerType: string;
+  port: string;
+  pin: number;
+  activeLow: boolean;
+  enabled: boolean;
+}
+
+// Calibration types
+export interface CalibrationStatus {
+  armId: string;
+  hasZeros: boolean;
+  hasRanges: boolean;
+  hasInversions: boolean;
+  hasGravity: boolean;
+  rangeDiscoveryActive: boolean;
+  rangeDiscoveryProgress: number;
+  rangeDiscoveryJoint: string | null;
+}
+
+export interface CalibrationProfile {
+  armId: string;
+  zeros: Record<string, number>;
+  ranges: Record<string, { min: number; max: number }>;
+  inversions: Record<string, boolean>;
+  gravity: Record<string, number[]> | null;
 }

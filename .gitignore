@@ -51,10 +51,12 @@ node_modules/
 out/
 
 # Logs
+logs/
 *.log
 
-# Arm config (machine-specific ports)
+# Platform config (machine-specific ports)
 configs/arms/settings.yaml
+configs/settings.yaml
 
 # Calibration data (machine-specific)
 configs/calibration/*/
@@ -62,6 +64,6 @@ configs/calibration/*/
 # Runtime data (meshes, demos, policies, analytics — all generated)
 data/
 
-# LeRobot submodule outputs
-lerobot/outputs/
+# Vendored lerobot fork (from FLASH-73/Nextis_Bridge)
+lerobot/
 CAD_examples/*.step

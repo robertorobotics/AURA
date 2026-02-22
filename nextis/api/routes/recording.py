@@ -1,7 +1,8 @@
 """Step-segmented recording routes.
 
-Manages a DemoRecorder that captures teleop data for a specific assembly
-step.  The recorder runs alongside the teleop loop, sampling at 50 Hz.
+Manages a DemoRecorder stored on SystemState that captures teleop data
+for a specific assembly step.  The recorder runs alongside the teleop
+loop, sampling at 50 Hz.
 """
 
 from __future__ import annotations
@@ -18,9 +19,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Module-level singleton — one recording at a time.
-_recorder: DemoRecorder | None = None
-
 
 @router.post("/step/{step_id}/start")
 async def start_recording(step_id: str, request: RecordingStartRequest) -> dict:
@@ -32,15 +30,14 @@ async def start_recording(step_id: str, request: RecordingStartRequest) -> dict:
         step_id: Assembly step being demonstrated.
         request: Body with assemblyId.
     """
-    global _recorder  # noqa: PLW0603
+    from nextis.state import get_state
 
-    if _recorder is not None and _recorder.is_recording:
+    state = get_state()
+
+    if state.recorder is not None and state.recorder.is_recording:
         raise HTTPException(status_code=409, detail="Recording already in progress")
 
-    # Import inside function to avoid circular import at module load.
-    from nextis.api.routes.teleop import get_teleop_loop
-
-    loop = get_teleop_loop()
+    loop = state.teleop_loop
     if loop is None or not loop.is_running:
         raise HTTPException(
             status_code=409,
@@ -48,21 +45,32 @@ async def start_recording(step_id: str, request: RecordingStartRequest) -> dict:
         )
 
     try:
-        _recorder = DemoRecorder(
+        # Gather connected camera keys for image recording
+        camera_fn = None
+        camera_keys: list[str] = []
+        if state.camera_service is not None:
+            camera_keys = state.camera_service.connected_keys
+            if camera_keys:
+                camera_fn = state.camera_service.get_frame
+
+        recorder = DemoRecorder(
             assembly_id=request.assembly_id,
             step_id=step_id,
+            camera_keys=camera_keys,
         )
-        _recorder.start(
+        recorder.start(
             robot_state_fn=lambda: loop.robot.get_observation(),
             action_fn=lambda: loop.latest_action,
             torque_fn=lambda: loop.robot.get_torques(),
+            camera_fn=camera_fn,
         )
+        state.recorder = recorder
     except RecordingError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     return {
         "status": "recording",
-        "demoId": _recorder.demo_id,
+        "demoId": recorder.demo_id,
         "stepId": step_id,
         "assemblyId": request.assembly_id,
     }
@@ -71,13 +79,15 @@ async def start_recording(step_id: str, request: RecordingStartRequest) -> dict:
 @router.post("/stop")
 async def stop_recording() -> DemoInfo:
     """Stop the current recording and flush to HDF5."""
-    global _recorder  # noqa: PLW0603
+    from nextis.state import get_state
 
-    if _recorder is None or not _recorder.is_recording:
+    state = get_state()
+
+    if state.recorder is None or not state.recorder.is_recording:
         raise HTTPException(status_code=409, detail="No active recording")
 
     try:
-        metadata = _recorder.stop()
+        metadata = state.recorder.stop()
     except RecordingError as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -90,20 +100,22 @@ async def stop_recording() -> DemoInfo:
         file_path=str(metadata.file_path),
         timestamp=metadata.timestamp,
     )
-    _recorder = None
+    state.recorder = None
     return info
 
 
 @router.post("/discard")
 async def discard_recording() -> dict[str, str]:
     """Discard the current recording."""
-    global _recorder  # noqa: PLW0603
+    from nextis.state import get_state
 
-    if _recorder is None:
+    state = get_state()
+
+    if state.recorder is None:
         raise HTTPException(status_code=409, detail="No recording to discard")
 
-    _recorder.discard()
-    _recorder = None
+    state.recorder.discard()
+    state.recorder = None
     return {"status": "discarded"}
 
 

@@ -34,6 +34,10 @@ class RecordingError(NextisError):
     """Demo recording failure -- file I/O or state error."""
 
 
+class CameraError(NextisError):
+    """Camera connection, capture, or streaming failure."""
+
+
 class TrainingError(NextisError):
     """Policy training failure -- data, config, or training loop error."""
 

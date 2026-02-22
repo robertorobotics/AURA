@@ -102,6 +102,7 @@ export function StepDetail() {
       {/* Training progress */}
       <TrainingProgress
         stepId={selectedStepId}
+        assemblyId={assembly.id}
         handler={step.handler}
         policyId={step.policyId}
       />

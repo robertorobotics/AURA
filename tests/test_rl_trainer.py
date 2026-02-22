@@ -29,9 +29,7 @@ OBS_DIM = 7
 ACTION_DIM = 7
 
 
-def _make_transition(
-    is_intervention: bool = False, reward: float = 0.0
-) -> Transition:
+def _make_transition(is_intervention: bool = False, reward: float = 0.0) -> Transition:
     """Create a random transition for testing."""
     return Transition(
         obs=np.random.randn(OBS_DIM).astype(np.float32),
@@ -71,8 +69,13 @@ def _make_bc_policy() -> Policy:
         "hidden_dim": 128,
         "architecture": "act",
         "joint_keys": [
-            "base.pos", "gripper.pos", "link1.pos", "link2.pos",
-            "link3.pos", "link4.pos", "link5.pos",
+            "base.pos",
+            "gripper.pos",
+            "link1.pos",
+            "link2.pos",
+            "link3.pos",
+            "link4.pos",
+            "link5.pos",
         ],
     }
     return Policy(model=model, config=config)
@@ -151,9 +154,7 @@ class TestReplayBuffer:
 
         # Verify data integrity
         for i in range(40):
-            np.testing.assert_array_almost_equal(
-                buf._buffer[i].obs, loaded._buffer[i].obs
-            )
+            np.testing.assert_array_almost_equal(buf._buffer[i].obs, loaded._buffer[i].obs)
             assert buf._buffer[i].reward == loaded._buffer[i].reward
             assert buf._buffer[i].is_intervention == loaded._buffer[i].is_intervention
 
@@ -298,15 +299,11 @@ class TestStepRewardComputer:
 
         # Low torque
         reward_fn.reset()
-        r_low = reward_fn.compute_timestep_reward(
-            obs, action, [0.5] * 7, [0.5]
-        )
+        r_low = reward_fn.compute_timestep_reward(obs, action, [0.5] * 7, [0.5])
 
         # High torque (closer to threshold)
         reward_fn.reset()
-        r_high = reward_fn.compute_timestep_reward(
-            obs, action, [4.5] * 7, [4.5]
-        )
+        r_high = reward_fn.compute_timestep_reward(obs, action, [4.5] * 7, [4.5])
 
         assert r_high > r_low
 

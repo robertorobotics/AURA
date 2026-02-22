@@ -1,15 +1,33 @@
 import type {
+  AddArmPayload,
+  AddToolPayload,
+  AddTriggerPayload,
   Assembly,
   AssemblySummary,
+  CalibrationProfile,
+  CalibrationStatus,
+  CameraConfig,
+  CameraConfigPayload,
+  CameraStatus,
+  DatasetSummary,
   Demo,
+  DiscoveredCamera,
   ExecutionState,
   HardwareStatus,
+  PairingInfo,
   PlanAnalysis,
+  PolicyInfo,
+  PortInfo,
   StepMetrics,
   SystemInfo,
+  SystemStatus,
   TeleopState,
+  ToolInfo,
+  ToolPairingInfo,
   TrainConfig,
+  TrainingPreset,
   TrainStatus,
+  TriggerInfo,
   AssemblyStep,
 } from "./types";
 import {
@@ -18,6 +36,7 @@ import {
   MOCK_EXECUTION_STATE,
   MOCK_STEP_METRICS,
   MOCK_SUMMARIES,
+  MOCK_SYSTEM_STATUS,
 } from "./mock-data";
 import { recordingEvents } from "./recording-events";
 
@@ -59,6 +78,25 @@ async function patch<T = void>(path: string, body: unknown): Promise<T> {
 
 async function del(path: string): Promise<void> {
   const res = await fetch(`${BASE}${path}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+}
+
+async function put<T = void>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+async function delWithBody(path: string, body: unknown): Promise<void> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
 }
 
@@ -242,6 +280,33 @@ export const api = {
     post<TrainStatus>(`/training/step/${stepId}/train`, config),
   getTrainingStatus: (jobId: string) =>
     get<TrainStatus>(`/training/jobs/${jobId}`),
+  cancelTraining: (jobId: string) =>
+    post(`/training/jobs/${jobId}/cancel`),
+  getTrainingPresets: () =>
+    withMockFallback(
+      () => get<TrainingPreset[]>("/training/presets"),
+      [],
+    ),
+
+  // --- Datasets ---
+  getDatasets: (assemblyId: string, stepId: string) =>
+    withMockFallback(
+      () => get<DatasetSummary>(`/datasets/${assemblyId}/${stepId}`),
+      { assemblyId, stepId, demoCount: 0, totalFrames: 0, demos: [] },
+    ),
+  deleteDatasetDemo: (assemblyId: string, stepId: string, demoId: string) =>
+    del(`/datasets/${assemblyId}/${stepId}/${demoId}`),
+
+  // --- Policies ---
+  getPolicies: (assemblyId: string, stepId: string) =>
+    withMockFallback(
+      () => get<PolicyInfo[]>(`/policies/${assemblyId}/${stepId}`),
+      [],
+    ),
+  deployPolicy: (assemblyId: string, stepId: string, policyType: string) =>
+    post(`/policies/${assemblyId}/${stepId}/deploy`, { policyType }),
+  deletePolicy: (assemblyId: string, stepId: string, policyId: string) =>
+    del(`/policies/${assemblyId}/${stepId}/${policyId}`),
 
   // --- Upload ---
   uploadCAD: (file: File) => postFile<Assembly>("/assemblies/upload", file),
@@ -255,4 +320,90 @@ export const api = {
     post<PlanAnalysis>(
       `/assemblies/${id}/analyze${apply ? "?apply=true" : ""}`,
     ),
+
+  // --- Arms CRUD ---
+  addArm: (data: AddArmPayload) => post("/hardware/arms", data),
+  updateArm: (armId: string, data: Partial<AddArmPayload>) =>
+    put(`/hardware/arms/${armId}`, data),
+  deleteArm: (armId: string) => del(`/hardware/arms/${armId}`),
+  scanPorts: () =>
+    withMockFallback(() => get<PortInfo[]>("/hardware/scan-ports"), []),
+
+  // --- Pairings ---
+  getPairings: () =>
+    withMockFallback(() => get<PairingInfo[]>("/hardware/pairings"), []),
+  createPairing: (leaderId: string, followerId: string, name: string) =>
+    post("/hardware/pairings", { leader_id: leaderId, follower_id: followerId, name }),
+  removePairing: (leaderId: string, followerId: string) =>
+    delWithBody("/hardware/pairings", { leader_id: leaderId, follower_id: followerId }),
+
+  // --- Cameras ---
+  getCameraStatus: () =>
+    withMockFallback(
+      () => get<Record<string, CameraStatus>>("/cameras/status"),
+      {},
+    ),
+  getCameraConfig: () =>
+    withMockFallback(
+      () => get<Record<string, CameraConfig>>("/cameras/config"),
+      {},
+    ),
+  updateCameraConfig: (config: CameraConfigPayload) =>
+    post("/cameras/config", config),
+  removeCameraConfig: (key: string) => del(`/cameras/${key}/config`),
+  connectCamera: (key: string) => post(`/cameras/${key}/connect`),
+  disconnectCamera: (key: string) => post(`/cameras/${key}/disconnect`),
+  scanCameras: () =>
+    withMockFallback(() => get<DiscoveredCamera[]>("/cameras/scan"), []),
+
+  // --- Tools ---
+  getTools: () => withMockFallback(() => get<ToolInfo[]>("/tools"), []),
+  addTool: (data: AddToolPayload) => post("/tools", data),
+  deleteTool: (toolId: string) => del(`/tools/${toolId}`),
+  connectTool: (toolId: string) => post(`/tools/${toolId}/connect`),
+  disconnectTool: (toolId: string) => post(`/tools/${toolId}/disconnect`),
+
+  // --- Triggers ---
+  getTriggers: () =>
+    withMockFallback(() => get<TriggerInfo[]>("/triggers"), []),
+  addTrigger: (data: AddTriggerPayload) => post("/triggers", data),
+  deleteTrigger: (triggerId: string) => del(`/triggers/${triggerId}`),
+
+  // --- Tool Pairings ---
+  getToolPairings: () =>
+    withMockFallback(() => get<ToolPairingInfo[]>("/tool-pairings"), []),
+  createToolPairing: (triggerId: string, toolId: string, action: string) =>
+    post("/tool-pairings", { trigger_id: triggerId, tool_id: toolId, action }),
+  removeToolPairing: (triggerId: string, toolId: string) =>
+    delWithBody("/tool-pairings", { trigger_id: triggerId, tool_id: toolId }),
+
+  // --- Calibration ---
+  getCalibrationStatus: (armId: string) =>
+    withMockFallback(
+      () => get<CalibrationStatus>(`/calibration/${armId}/status`),
+      {
+        armId,
+        hasZeros: false,
+        hasRanges: false,
+        hasInversions: false,
+        hasGravity: false,
+        rangeDiscoveryActive: false,
+        rangeDiscoveryProgress: 0,
+        rangeDiscoveryJoint: null,
+      },
+    ),
+  recordZeros: (armId: string) => post(`/calibration/${armId}/zero`),
+  startRangeDiscovery: (armId: string) => post(`/calibration/${armId}/range`),
+  applyCalibration: (armId: string) => post(`/calibration/${armId}/apply`),
+  getCalibrationProfile: (armId: string) =>
+    get<CalibrationProfile>(`/calibration/${armId}/profile`),
+  clearCalibration: (armId: string) => del(`/calibration/${armId}/profile`),
+
+  // --- System ---
+  getSystemStatus: () =>
+    withMockFallback(
+      () => get<SystemStatus>("/system/status"),
+      MOCK_SYSTEM_STATUS,
+    ),
+  restartSystem: () => post("/system/restart"),
 };

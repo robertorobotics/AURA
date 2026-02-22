@@ -201,10 +201,7 @@ def test_resting_rotation_flat_box() -> None:
     import math
 
     assert all(
-        abs(r) < 0.1
-        or abs(abs(r) - math.pi) < 0.1
-        or abs(abs(r) - math.pi / 2) < 0.1
-        for r in rot
+        abs(r) < 0.1 or abs(abs(r) - math.pi) < 0.1 or abs(abs(r) - math.pi / 2) < 0.1 for r in rot
     ), f"Expected valid resting rotation, got {rot}"
 
 
