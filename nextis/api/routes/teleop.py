@@ -155,6 +155,52 @@ def _create_mock_stack() -> tuple:
     return robot, leader, safety, mapper, None, None
 
 
+def _ensure_leader_modes(leader: object, leader_arm: object) -> None:
+    """Verify Dynamixel leader motors are in CURRENT_POSITION mode.
+
+    DynamixelLeader.configure() sets this during connect(), but a motor
+    power-cycle between connect and teleop start can reset the mode.
+    This is a defensive re-check.
+
+    Args:
+        leader: Leader arm instance (DynamixelLeader or other).
+        leader_arm: ArmDefinition for the leader.
+    """
+    from nextis.hardware.types import MotorType
+
+    if leader_arm.motor_type not in (MotorType.DYNAMIXEL_XL330, MotorType.DYNAMIXEL_XL430):
+        return
+    if not hasattr(leader, "bus"):
+        return
+
+    bus = leader.bus
+    # Gripper and joint_4 need CURRENT_POSITION (5) for force feedback:
+    # - gripper: allows Goal_Current writes for grip resistance
+    # - joint_4: allows virtual spring feedback via Goal_Current + Goal_Position
+    for motor_name in ("gripper", "joint_4"):
+        if motor_name not in bus.motors:
+            continue
+        try:
+            current_mode = bus.read("Operating_Mode", motor_name, normalize=False)
+            if current_mode != 5:  # 5 = CURRENT_BASED_POSITION
+                logger.warning(
+                    "%s in mode %d, expected CURRENT_POSITION (5) — re-configuring",
+                    motor_name,
+                    current_mode,
+                )
+                bus.write("Torque_Enable", motor_name, 0, normalize=False)
+                bus.write("Operating_Mode", motor_name, 5, normalize=False)
+                bus.write("Current_Limit", motor_name, 1750, normalize=False)
+                # Set Goal_Position to current to prevent violent jump on torque-enable
+                cur_pos = bus.read("Present_Position", motor_name, normalize=False)
+                bus.write("Goal_Position", motor_name, int(cur_pos), normalize=False)
+                bus.write("Torque_Enable", motor_name, 1, normalize=False)
+            else:
+                logger.info("%s: CURRENT_POSITION mode confirmed", motor_name)
+        except Exception as e:
+            logger.warning("Could not verify %s operating mode: %s", motor_name, e)
+
+
 def _create_real_stack(arm_selection: list[str]) -> tuple:
     """Create real hardware stack from connected arms in the ArmRegistryService.
 
@@ -179,7 +225,7 @@ def _create_real_stack(arm_selection: list[str]) -> tuple:
 
     registry = get_registry()
 
-    # Find a pairing where both arms are connected.
+    # ── 1. Find a pairing where both arms are connected ───────────
     pairing = None
     for p in registry.pairings:
         leader_ok = registry.arm_status.get(p.leader_id) == ConnectionStatus.CONNECTED
@@ -197,11 +243,29 @@ def _create_real_stack(arm_selection: list[str]) -> tuple:
         break
 
     if pairing is None:
+        statuses = {
+            aid: registry.arm_status.get(aid, ConnectionStatus.DISCONNECTED).value
+            for p in registry.pairings
+            for aid in (p.leader_id, p.follower_id)
+        }
         raise ValueError(
             "No connected arm pairing found. "
-            "Connect both leader and follower via POST /hardware/connect first."
+            "Connect both leader and follower via POST /hardware/connect first. "
+            f"Current statuses: {statuses}"
         )
 
+    leader_arm = registry.arms.get(pairing.leader_id)
+    follower_arm = registry.arms.get(pairing.follower_id)
+    logger.info(
+        "Using pairing '%s': leader=%s (%s), follower=%s (%s)",
+        pairing.name,
+        pairing.leader_id,
+        leader_arm.motor_type.value if leader_arm else "?",
+        pairing.follower_id,
+        follower_arm.motor_type.value if follower_arm else "?",
+    )
+
+    # ── 2. Retrieve arm instances ─────────────────────────────────
     robot = registry.get_arm_instance(pairing.follower_id)
     leader = registry.get_arm_instance(pairing.leader_id)
 
@@ -217,6 +281,11 @@ def _create_real_stack(arm_selection: list[str]) -> tuple:
             "Ensure connect_arm succeeded (check lerobot availability if it failed)."
         )
 
+    # ── 3. Verify leader operating modes ──────────────────────────
+    if leader_arm:
+        _ensure_leader_modes(leader, leader_arm)
+
+    # ── 4. Build control stack ────────────────────────────────────
     safety = SafetyLayer(robot_lock=threading.Lock())
 
     mapper = JointMapper(arm_registry=registry)
@@ -226,10 +295,17 @@ def _create_real_stack(arm_selection: list[str]) -> tuple:
         leader=leader,
     )
 
+    if not mapper.joint_mapping:
+        raise ValueError(
+            f"Joint mapping produced 0 joints for pairing '{pairing.name}'. "
+            f"Leader type={leader_arm.motor_type.value if leader_arm else '?'}, "
+            f"follower type={follower_arm.motor_type.value if follower_arm else '?'}. "
+            "This motor type combination may not be supported yet."
+        )
+
     # Enable force feedback for Damiao followers.
     gripper_ff = None
     joint_ff = None
-    follower_arm = registry.arms.get(pairing.follower_id)
     if follower_arm and follower_arm.motor_type == MotorType.DAMIAO:
         gripper_ff = GripperForceFeedback()
         joint_ff = JointForceFeedback()

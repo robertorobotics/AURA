@@ -4,6 +4,10 @@
 
 Upload a CAD file → auto-generate assembly plan → teach the hard steps → run autonomously.
 
+<p align="center">
+  <img src="demo/aura%20v1.gif" alt="AURA demo — upload CAD, plan assembly, execute" width="800"/>
+</p>
+
 ## What It Does
 
 1. **Parse** — Upload a STEP file, extract parts and geometry, export GLB meshes

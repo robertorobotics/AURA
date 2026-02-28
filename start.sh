@@ -135,7 +135,7 @@ if python -c "import lerobot" 2>/dev/null; then
     ok "lerobot available"
 else
     warn "lerobot not found — hardware connections will be mock-only"
-    warn "Run: git clone --depth 1 https://github.com/FLASH-73/Nextis_Bridge.git /tmp/nb && cp -r /tmp/nb/lerobot . && rm -rf /tmp/nb"
+    warn "Place lerobot source at ./lerobot/src (start.sh adds it to PYTHONPATH)"
 fi
 
 if python -c "import OCP" 2>/dev/null; then

@@ -98,6 +98,8 @@ class JointMapper:
             is_dam_follower = follower_arm and follower_arm.motor_type.value == "damiao"
             is_fee_follower = follower_arm and follower_arm.motor_type.value == "sts3215"
 
+            is_sts_leader = leader_arm and leader_arm.motor_type.value == "sts3215"
+
             if is_dyn_leader and is_dam_follower:
                 for dyn_name, dam_name in DYNAMIXEL_TO_DAMIAO_JOINT_MAP.items():
                     self.joint_mapping[f"{dyn_name}.pos"] = f"{dam_name}.pos"
@@ -108,6 +110,17 @@ class JointMapper:
                     self.joint_mapping[f"{dyn_name}.pos"] = f"{dam_name}.pos"
                 self.value_mode = ValueMode.RAD_TO_PERCENT
                 self._precompute_cal_ranges(leader)
+            elif is_sts_leader and is_dam_follower:
+                # Umbra leader → Damiao follower: both use base/linkN naming
+                for name in JOINT_NAMES_TEMPLATE:
+                    self.joint_mapping[f"{name}.pos"] = f"{name}.pos"
+                self._has_damiao_follower = True
+                self.value_mode = ValueMode.FLOAT
+            elif is_sts_leader and is_fee_follower:
+                # Umbra leader → Umbra follower: identity mapping
+                for name in JOINT_NAMES_TEMPLATE:
+                    self.joint_mapping[f"{name}.pos"] = f"{name}.pos"
+                self.value_mode = ValueMode.FLOAT
             else:
                 # Legacy prefix-based mapping for same-type arms
                 leader_prefix = _get_arm_prefix(leader_id)
